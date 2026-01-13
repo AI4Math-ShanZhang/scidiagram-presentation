@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SciDiagram: Scientific Diagram Understanding Benchmark</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 40px 60px 80px 60px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 60px;
+            font-size: 14px;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.7), transparent);
+            z-index: 100;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 50%;
+            transform: translateY(50%);
+            z-index: 200;
+        }
+
+        .nav-buttons.left {
+            left: 20px;
+        }
+
+        .nav-buttons.right {
+            right: 20px;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(59, 130, 246, 0.6);
+            transform: scale(1.1);
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .nav-dot.active {
+            background: #3b82f6;
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(34, 197, 94, 0.1));
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            font-size: 24px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+            border-left: 5px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border-left: 5px solid #ef4444;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border-left: 5px solid #6366f1;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-down {
+            animation: fadeDown 0.6s ease-out forwards;
+        }
+
+        .animate-fade-left {
+            animation: fadeLeft 0.6s ease-out forwards;
+        }
+
+        .animate-fade-right {
+            animation: fadeRight 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons left">
+        <button class="nav-btn" onclick="prevSlide()">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    </div>
+    <div class="nav-buttons right">
+        <button class="nav-btn" onclick="nextSlide()">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="nav-dots"></div>
+
+    <!-- Footer -->
+    <footer class="slide-footer">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 1rem;">
+            <div class="text-slate-400">
+                <span class="text-slate-300 font-medium">Shan Zhang</span>
+            </div>
+            <div class="text-slate-400 font-medium tracking-wide text-center">
+                SciDiagram: Scientific Diagram Understanding Benchmark
+            </div>
+            <div class="flex items-center justify-end gap-4 text-slate-400">
+                <span class="text-slate-300 font-mono">
+                    <span id="current-page">1</span> / <span id="total-pages">14</span>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Slide 0: Cover -->
+    <section class="slide active" data-index="0">
+        <div class="text-center max-w-5xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-diagram-project text-blue-400" style="font-size: 80px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-500 to-emerald-400 mb-6" style="font-size: 52px;">
+                SciDiagram
+            </h1>
+            <p class="font-serif font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-emerald-400 to-blue-400 mb-8" style="font-size: 32px;">
+                A Benchmark for Structured Visual Understanding in Scientific Diagrams
+            </p>
+            <div class="text-2xl text-slate-300 mb-8">
+                <span class="text-blue-400 font-semibold">Core Idea:</span> Code first. Evaluate precisely, improve precisely
+            </div>
+            <div class="pt-4 flex justify-center gap-3 flex-wrap">
+                <span class="category-badge bg-blue-500/20 text-blue-400">Charts (660)</span>
+                <span class="category-badge bg-emerald-500/20 text-emerald-400">Geometry (352)</span>
+                <span class="category-badge bg-purple-500/20 text-purple-400">Graphs (81)</span>
+                <span class="category-badge bg-amber-500/20 text-amber-400">Chemistry (239)</span>
+                <span class="category-badge bg-red-500/20 text-red-400">Circuits (532)</span>
+                <span class="category-badge bg-cyan-500/20 text-cyan-400">Base-TikZ (2018)</span>
+            </div>
+            <div class="pt-4 text-slate-400">
+                <span class="text-cyan-400 font-bold">7,424</span> diagrams |
+                <span class="text-emerald-400 font-bold">8</span> categories |
+                <span class="text-purple-400 font-bold">167</span> source files
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 1: Core Research Questions -->
+    <section class="slide" data-index="1">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-8 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Three <span class="text-blue-400">Guiding Questions</span></h2>
+                <p class="text-slate-400 mt-2">Questions shepherding the motivation and value of our benchmark</p>
+            </div>
+
+            <div class="space-y-5 animate-fade-up">
+                <div class="question-box">
+                    <h3 class="text-2xl font-bold text-indigo-400 mb-2 flex items-center gap-3">
+                        <span class="text-4xl font-serif text-indigo-500/50">Q1</span>
+                        What are the limitations?
+                    </h3>
+                    <p class="text-lg text-slate-300">
+                        What are the limitations of current models in scientific diagram understanding?
+                    </p>
+                </div>
+
+                <div class="question-box">
+                    <h3 class="text-2xl font-bold text-indigo-400 mb-2 flex items-center gap-3">
+                        <span class="text-4xl font-serif text-indigo-500/50">Q2</span>
+                        How to design an effective benchmark?
+                    </h3>
+                    <p class="text-lg text-slate-300">
+                        How can we design a benchmark that effectively evaluates these limitations - especially when numerous diagram benchmarks already exist?
+                    </p>
+                </div>
+
+                <div class="question-box">
+                    <h3 class="text-2xl font-bold text-indigo-400 mb-2 flex items-center gap-3">
+                        <span class="text-4xl font-serif text-indigo-500/50">Q3</span>
+                        Why expose these limitations?
+                    </h3>
+                    <p class="text-lg text-slate-300">
+                        Why is it valuable to expose these limitations, and how can such analysis inform future research directions?
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center animate-fade-up">
+                <div class="inline-block bg-slate-800/50 px-6 py-3 rounded-xl border border-blue-500/30">
+                    <p class="text-slate-300">
+                        <i class="fa-solid fa-arrow-right text-blue-400 mr-2"></i>
+                        Next: We answer Q1 through a <span class="text-blue-400 font-bold">4-step argument</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: A1 Overview - 4-Step Argument -->
+    <section class="slide" data-index="2">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <div class="inline-block bg-indigo-500/20 px-4 py-1 rounded-full text-indigo-400 text-sm font-bold mb-3">
+                    Answering Q1
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">A1: Current Models Lack <span class="text-red-400">Genuine Diagram Understanding</span></h2>
+                <p class="text-slate-400 mt-2">We establish this through a 4-step argument</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 items-start">
+                <!-- Left: The Main Claim -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-xl border border-red-500/30">
+                        <h3 class="text-2xl font-bold text-red-400 mb-4 flex items-center gap-3">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+                            The Core Problem
+                        </h3>
+                        <div class="space-y-3 text-lg text-slate-300">
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-3"></i> Models fail to <span class="text-white font-semibold">recognize basic elements</span> in diagrams</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-3"></i> Models fail to parse diagrams into <span class="text-white font-semibold">correct structural topology</span></p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-3"></i> Lack of <span class="text-white font-semibold">symbolic understanding</span> of primitives</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: 4-Step Roadmap -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-blue-500/30">
+                        <h3 class="text-xl font-bold text-blue-400 mb-4">
+                            <i class="fa-solid fa-question-circle mr-2"></i>
+                            Why Strong on Natural Images but Fail on Diagrams?
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-2 bg-cyan-500/10 rounded-lg border-l-4 border-cyan-500">
+                                <span class="text-cyan-400 font-bold text-lg">1</span>
+                                <p class="text-slate-300 text-sm">Diagrams are <span class="text-cyan-400 font-semibold">structured interfaces</span>, not natural images for visual aesthetics</p>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-emerald-500/10 rounded-lg border-l-4 border-emerald-500">
+                                <span class="text-emerald-400 font-bold text-lg">2</span>
+                                <p class="text-slate-300 text-sm"><span class="text-emerald-400 font-semibold">Code-based representations</span> expose structural understanding</p>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-purple-500/10 rounded-lg border-l-4 border-purple-500">
+                                <span class="text-purple-400 font-bold text-lg">3</span>
+                                <p class="text-slate-300 text-sm">Perception & symbolic understanding are <span class="text-purple-400 font-semibold">prerequisites for reasoning</span></p>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-red-500/10 rounded-lg border-l-4 border-red-500">
+                                <span class="text-red-400 font-bold text-lg">4</span>
+                                <p class="text-slate-300 text-sm">Even with strong <span class="text-white font-semibold">textual reasoning</span>, models <span class="text-red-400 font-semibold">fail at perception & symbolic understanding</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 text-center animate-fade-up">
+                <div class="inline-block bg-slate-800/50 px-5 py-2 rounded-xl border border-slate-600">
+                    <p class="text-slate-400 text-sm">
+                        <i class="fa-solid fa-arrow-right text-blue-400 mr-2"></i>
+                        Let's walk through each step...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Step 1 - Diagrams Are Unique -->
+    <section class="slide" data-index="3">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-cyan-500/20 px-4 py-1 rounded-full text-cyan-400 text-sm font-bold mb-3">
+                    A1 · Step 1 of 4
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Diagrams Are <span class="text-cyan-400">Structured Interfaces</span>, Not Natural Images</h2>
+                <p class="text-slate-400 mt-2">Why diagrams require fundamentally different understanding</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 items-start">
+                <!-- Left: Key Properties -->
+                <div class="space-y-3 animate-fade-right">
+                    <div class="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-4 rounded-2xl border border-cyan-500/30">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-shapes text-cyan-400 text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold text-cyan-400">Designed Artifacts</h4>
+                                <p class="text-slate-400 text-sm">Unlike photos, diagrams encode precise structural & logical relationships</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <p class="text-slate-300">
+                            <i class="fa-solid fa-check text-cyan-400 mr-3"></i>
+                            Correctness is <span class="text-white font-semibold">discrete and verifiable</span>, not continuous/subjective
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <p class="text-slate-300">
+                            <i class="fa-solid fa-check text-cyan-400 mr-3"></i>
+                            Small visual changes can <span class="text-white font-semibold">completely alter meaning</span>
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <p class="text-slate-300">
+                            <i class="fa-solid fa-check text-cyan-400 mr-3"></i>
+                            Appearance similarity <span class="text-red-400 font-semibold">≠</span> semantic equivalence
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Domain Examples -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-center text-slate-300 mb-4">Domain Examples</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-3 bg-amber-500/10 rounded-xl border border-amber-500/30">
+                                <i class="fa-solid fa-bolt text-amber-400 text-xl"></i>
+                                <div>
+                                    <p class="text-amber-400 font-bold text-sm">Circuit Diagram</p>
+                                    <p class="text-slate-400 text-xs">Correctness = topological connectivity, not visual aesthetics</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+                                <i class="fa-solid fa-draw-polygon text-emerald-400 text-xl"></i>
+                                <div>
+                                    <p class="text-emerald-400 font-bold text-sm">Geometry Figure</p>
+                                    <p class="text-slate-400 text-xs">Meaning = angle markers & segment labels, not pixel colors</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-purple-500/10 rounded-xl border border-purple-500/30">
+                                <i class="fa-solid fa-atom text-purple-400 text-xl"></i>
+                                <div>
+                                    <p class="text-purple-400 font-bold text-sm">Chemical Structure</p>
+                                    <p class="text-slate-400 text-xs">Meaning = bond types & atom positions, not visual style</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="highlight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-lightbulb text-amber-400 mr-2"></i>
+                        <span class="text-amber-400 font-bold">Implication:</span>
+                        We need evaluation methods that test <span class="text-white font-semibold">structural comprehension</span>, not just visual similarity
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Step 2 - Code as Representation -->
+    <section class="slide" data-index="4">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                    A1 · Step 2 of 4
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-emerald-400">Code-Based Representations</span> Expose Structural Understanding</h2>
+                <p class="text-slate-400 mt-2">Why code is better than natural language for evaluation</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Why not NL? -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-red-500/30 mb-4">
+                        <h3 class="text-lg font-bold text-red-400 mb-3">
+                            <i class="fa-solid fa-xmark mr-2"></i>Why Not Natural Language?
+                        </h3>
+                        <div class="space-y-2 text-sm text-slate-300">
+                            <p><i class="fa-solid fa-minus text-red-400 mr-2"></i>Inherently <span class="text-white font-semibold">ambiguous</span> - same structure, many descriptions</p>
+                            <p><i class="fa-solid fa-minus text-red-400 mr-2"></i>Hard to describe <span class="text-white font-semibold">spatial arrangements</span> precisely</p>
+                            <p><i class="fa-solid fa-minus text-red-400 mr-2"></i>Difficult to <span class="text-white font-semibold">evaluate</span> - no ground truth comparison</p>
+                        </div>
+                    </div>
+
+                    <!-- Domain packages -->
+                    <div class="bg-slate-700/30 p-4 rounded-xl">
+                        <h4 class="text-sm font-bold text-slate-400 mb-2">Domain-Specific Packages</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="bg-amber-500/10 p-2 rounded"><span class="text-amber-400 font-mono">ChemFig</span></div>
+                            <div class="bg-blue-500/10 p-2 rounded"><span class="text-blue-400 font-mono">CircuiTikZ</span></div>
+                            <div class="bg-emerald-500/10 p-2 rounded"><span class="text-emerald-400 font-mono">TKZ-Euclide</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Code advantages -->
+                <div class="space-y-3 animate-fade-left">
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-emerald-500/30">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-check-double text-emerald-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-emerald-400">Verifiability</h3>
+                        </div>
+                        <p class="text-slate-300 text-sm">Code can be <span class="text-white font-semibold">executed and rendered</span> for comparison</p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-blue-500/30">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-crosshairs text-blue-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-blue-400">Precision</h3>
+                        </div>
+                        <p class="text-slate-300 text-sm">Structural relationships are <span class="text-white font-semibold">explicitly encoded</span> in syntax</p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-purple-500/30">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-compress text-purple-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-purple-400">Conciseness</h3>
+                        </div>
+                        <p class="text-slate-300 text-sm">Domain packages <span class="text-white font-semibold">compress disciplinary knowledge</span> into compact syntax</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-star text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Key Insight:</span>
+                        The ability to generate correct code serves as <span class="text-white font-semibold">evidence of structural and topology understanding</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Step 3 - Perception is Prerequisite -->
+    <section class="slide" data-index="5">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    A1 · Step 3 of 4
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Perception & Symbolic Understanding Are <span class="text-purple-400">Prerequisites for Reasoning</span></h2>
+                <p class="text-slate-400 mt-2">Scientific reasoning requires grounding on accurate perception</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 items-center">
+                <!-- Left: The Chain -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-purple-500/30">
+                        <h3 class="text-xl font-bold text-purple-400 mb-4">
+                            <i class="fa-solid fa-link mr-2"></i>The Reasoning Chain
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-400 font-bold">1</div>
+                                <div class="flex-1 bg-blue-500/10 p-3 rounded-lg border border-blue-500/30">
+                                    <p class="text-blue-400 font-bold">PARSE</p>
+                                    <p class="text-slate-400 text-sm">Identify diagram elements & structure</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center"><i class="fa-solid fa-arrow-down text-slate-600 text-xl"></i></div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">2</div>
+                                <div class="flex-1 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30">
+                                    <p class="text-emerald-400 font-bold">INTERPRET</p>
+                                    <p class="text-slate-400 text-sm">Understand domain-specific symbolic meanings</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center"><i class="fa-solid fa-arrow-down text-slate-600 text-xl"></i></div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-purple-500/30 flex items-center justify-center text-purple-400 font-bold">3</div>
+                                <div class="flex-1 bg-purple-500/10 p-3 rounded-lg border border-purple-500/30">
+                                    <p class="text-purple-400 font-bold">REASON</p>
+                                    <p class="text-slate-400 text-sm">Derive valid scientific conclusions</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Examples -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-4">
+                            <i class="fa-solid fa-flask mr-2 text-purple-400"></i>Symbolic Understanding Examples
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="bg-amber-500/10 p-3 rounded-xl">
+                                <p class="text-amber-400 font-bold text-sm">ChemFig: Hexagon → Benzene ring</p>
+                                <p class="text-slate-400 text-xs">Model must know organic chemistry conventions</p>
+                            </div>
+                            <div class="bg-red-500/10 p-3 rounded-xl">
+                                <p class="text-red-400 font-bold text-sm">CircuiTikZ: Arrow → Current flow direction</p>
+                                <p class="text-slate-400 text-xs">Model must know electrical engineering conventions</p>
+                            </div>
+                            <div class="bg-emerald-500/10 p-3 rounded-xl">
+                                <p class="text-emerald-400 font-bold text-sm">TKZ-Euclide: Rectangle marker → Right angle</p>
+                                <p class="text-slate-400 text-xs">Model must know geometry notation</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 warning-box">
+                        <p class="text-sm text-slate-300">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 mr-2"></i>
+                            <span class="text-red-400 font-bold">Without semantic grounding</span>, models cannot transfer diagram understanding to solve scientific questions
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Step 4 - Current Models Fail -->
+    <section class="slide" data-index="6">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-red-500/20 px-4 py-1 rounded-full text-red-400 text-sm font-bold mb-3">
+                    A1 · Step 4 of 4
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Current Models <span class="text-red-400">Fail at Foundational Steps</span></h2>
+                <p class="text-slate-400 mt-2">Evidence of shallow perception, not genuine understanding</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Failure Modes -->
+                <div class="space-y-3 animate-fade-right">
+                    <div class="warning-box">
+                        <h4 class="text-lg font-bold text-red-400 mb-2">
+                            <i class="fa-solid fa-xmark mr-2"></i>Failure 1: Misleading Metrics
+                        </h4>
+                        <p class="text-slate-300 text-sm">
+                            High scores on <span class="text-white font-semibold">FID, CLIP</span> while failing on structural correctness. These metrics measure <span class="text-red-400">visual similarity</span>, not <span class="text-emerald-400">structural precision</span>.
+                        </p>
+                    </div>
+
+                    <div class="warning-box">
+                        <h4 class="text-lg font-bold text-red-400 mb-2">
+                            <i class="fa-solid fa-xmark mr-2"></i>Failure 2: Missing Semantic Changes
+                        </h4>
+                        <p class="text-slate-300 text-sm">
+                            Small but significant changes (e.g., <span class="text-white font-semibold">resistor → capacitor</span>, layout/color changes) are often missed.
+                        </p>
+                    </div>
+
+                    <div class="warning-box">
+                        <h4 class="text-lg font-bold text-red-400 mb-2">
+                            <i class="fa-solid fa-xmark mr-2"></i>Failure 3: Inconsistent Interpretation
+                        </h4>
+                        <p class="text-slate-300 text-sm">
+                            Models may generate code but fail to understand <span class="text-white font-semibold">symbolic and spatial relationships</span> among primitives.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Visual Gap -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-red-500/30">
+                        <h3 class="text-lg font-bold text-center text-slate-300 mb-4">The Perception Gap</h3>
+                        <div class="space-y-3">
+                            <div class="bg-red-500/10 p-3 rounded-xl">
+                                <p class="text-center">
+                                    <span class="text-red-400 font-bold">Global Metrics (FID, CLIP)</span><br>
+                                    <span class="text-slate-400 text-sm">measure visual similarity</span>
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <i class="fa-solid fa-not-equal text-red-400 text-2xl"></i>
+                            </div>
+                            <div class="bg-emerald-500/10 p-3 rounded-xl">
+                                <p class="text-center">
+                                    <span class="text-emerald-400 font-bold">Structural Correctness</span><br>
+                                    <span class="text-slate-400 text-sm">measures logical & topological accuracy</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 bg-slate-800/50 p-4 rounded-xl border border-blue-500/30">
+                        <p class="text-slate-300 text-sm text-center">
+                            <i class="fa-solid fa-arrow-right text-blue-400 mr-2"></i>
+                            This motivates our benchmark: <span class="text-blue-400 font-bold">How to evaluate these failures?</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: A2 - Benchmark Design Overview -->
+    <section class="slide" data-index="7">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    Answering Q2
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">A2: <span class="text-blue-400">Benchmark Design</span> - Three Solutions</h2>
+                <p class="text-slate-400 mt-2">How we design a benchmark to effectively evaluate these limitations</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-5">
+                <!-- L1 → S1: Data -->
+                <div class="animate-fade-up">
+                    <div class="bg-gradient-to-b from-amber-500/20 to-amber-500/5 p-4 rounded-2xl border border-amber-500/30 h-full">
+                        <div class="text-center mb-3">
+                            <span class="text-4xl font-serif font-bold text-amber-500/50">L1</span>
+                            <h3 class="text-lg font-bold text-amber-400">Data Limitations</h3>
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-400 mb-3">
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Limited diagram types</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Synthetic images only</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Narrow subject coverage</p>
+                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30">
+                            <p class="text-sm text-emerald-400 font-bold mb-1">
+                                <i class="fa-solid fa-check mr-2"></i>S1: Diverse Real-World Data
+                            </p>
+                            <p class="text-xs text-slate-400">8 categories, 7,424 diagrams from papers & docs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- L2 → S2: Metrics -->
+                <div class="animate-fade-up" style="animation-delay: 0.1s;">
+                    <div class="bg-gradient-to-b from-blue-500/20 to-blue-500/5 p-4 rounded-2xl border border-blue-500/30 h-full">
+                        <div class="text-center mb-3">
+                            <span class="text-4xl font-serif font-bold text-blue-500/50">L2</span>
+                            <h3 class="text-lg font-bold text-blue-400">Metric Limitations</h3>
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-400 mb-3">
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Global metrics miss structure</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Token metrics are order-sensitive</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Focus on syntax, not perception</p>
+                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30">
+                            <p class="text-sm text-emerald-400 font-bold mb-1">
+                                <i class="fa-solid fa-check mr-2"></i>S2: Primitive-Level Metrics
+                            </p>
+                            <p class="text-xs text-slate-400">Type, Text, Color, Layout - order-invariant</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- L3 → S3: Evaluation -->
+                <div class="animate-fade-up" style="animation-delay: 0.2s;">
+                    <div class="bg-gradient-to-b from-purple-500/20 to-purple-500/5 p-4 rounded-2xl border border-purple-500/30 h-full">
+                        <div class="text-center mb-3">
+                            <span class="text-4xl font-serif font-bold text-purple-500/50">L3</span>
+                            <h3 class="text-lg font-bold text-purple-400">Evaluation Limitations</h3>
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-400 mb-3">
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>One-step evaluation only</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>Can't diagnose what fails</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i>No ability decomposition</p>
+                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30">
+                            <p class="text-sm text-emerald-400 font-bold mb-1">
+                                <i class="fa-solid fa-check mr-2"></i>S3: Progressive Tasks
+                            </p>
+                            <p class="text-xs text-slate-400">D2C → DE → DU, isolate weak abilities</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-microscope text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Core Design:</span>
+                        Executable code + multi-granularity evaluation (token/primitive/global) + progressive task design to <span class="text-white font-semibold">isolate what ability the model lacks</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 8: Data Distribution Chart (S1 Detail) -->
+    <section class="slide" data-index="8">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-amber-500/20 px-4 py-1 rounded-full text-amber-400 text-sm font-bold mb-3">
+                    A2 · Solution S1 Details
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Dataset <span class="text-cyan-400">Distribution</span></h2>
+                <p class="text-slate-400 mt-2">7,424 real-world diagrams across 8 categories from papers & documentation</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Bar Chart -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-slate-300 mb-5">
+                            <i class="fa-solid fa-chart-bar mr-3 text-cyan-400"></i>
+                            Sample Distribution
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-pink-400">datikz-v3</span>
+                                    <span class="text-slate-300">3,542 (47.7%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-pink-500 to-pink-400 rounded-full" style="width: 47.7%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-cyan-400">base-tikz</span>
+                                    <span class="text-slate-300">2,018 (27.2%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full" style="width: 27.2%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-blue-400">Charts-pgfplots</span>
+                                    <span class="text-slate-300">660 (8.9%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style="width: 8.9%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-red-400">Circuit-circuitikz</span>
+                                    <span class="text-slate-300">532 (7.2%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full" style="width: 7.2%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-emerald-400">Geometry-tkz-euclide</span>
+                                    <span class="text-slate-300">352 (4.7%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style="width: 4.7%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-amber-400">Chemistry-chemfig</span>
+                                    <span class="text-slate-300">239 (3.2%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" style="width: 3.2%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-purple-400">Graph-tikz-network</span>
+                                    <span class="text-slate-300">81 (1.1%)</span>
+                                </div>
+                                <div class="h-6 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style="width: 1.1%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pie Chart -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-slate-300 mb-5">
+                            <i class="fa-solid fa-chart-pie mr-3 text-purple-400"></i>
+                            Category Breakdown
+                        </h3>
+                        <div class="flex items-center justify-center mb-6">
+                            <div class="relative w-48 h-48">
+                                <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ec4899" stroke-width="20" stroke-dasharray="119.38 251.33" stroke-dashoffset="0"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#06b6d4" stroke-width="20" stroke-dasharray="68.08 251.33" stroke-dashoffset="-119.38"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" stroke-width="20" stroke-dasharray="22.29 251.33" stroke-dashoffset="-187.46"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="20" stroke-dasharray="18.05 251.33" stroke-dashoffset="-209.75"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="20" stroke-dasharray="11.78 251.33" stroke-dashoffset="-227.80"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="20" stroke-dasharray="8.02 251.33" stroke-dashoffset="-239.58"/>
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#a855f7" stroke-width="20" stroke-dasharray="2.76 251.33" stroke-dashoffset="-247.60"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-white">7,424</div>
+                                        <div class="text-xs text-slate-400">Total</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-pink-500"></div><span class="text-slate-400">datikz-v3</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-cyan-500"></div><span class="text-slate-400">base-tikz</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-500"></div><span class="text-slate-400">Charts</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><span class="text-slate-400">Circuit</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-slate-400">Geometry</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-400">Chemistry</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div><span class="text-slate-400">Graph</span></div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-slate-500"></div><span class="text-slate-400">167 sources</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Primitive-Level Metrics Detail (S2) -->
+    <section class="slide" data-index="9">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                    A2 · Solution S2 Details
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-emerald-400">Primitive-Level</span> Evaluation Metrics</h2>
+                <p class="text-slate-400 mt-2">Four semantic dimensions extracted directly from code syntax</p>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4 animate-fade-up">
+                <!-- Type -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-blue-500/30">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-shapes text-blue-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-blue-400 text-center mb-2">Type</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Element types with domain meaning
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        "resistor", "benzene", "scatter"
+                    </p>
+                </div>
+
+                <!-- Text -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-emerald-500/30">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-font text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-emerald-400 text-center mb-2">Text</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Labels, titles, annotations
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        with semantic positions
+                    </p>
+                </div>
+
+                <!-- Color -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-pink-500/30">
+                    <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-palette text-pink-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-pink-400 text-center mb-2">Color</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Draw/fill colors
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        component-specific
+                    </p>
+                </div>
+
+                <!-- Layout -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-amber-500/30">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-sitemap text-amber-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-amber-400 text-center mb-2">Layout</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Spatial arrangement
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        topological connectivity
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-5 animate-fade-up">
+                <!-- Why primitive-level? -->
+                <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                    <h4 class="text-sm font-bold text-slate-300 mb-3">
+                        <i class="fa-solid fa-check-circle text-emerald-400 mr-2"></i>Why Primitive-Level Metrics?
+                    </h4>
+                    <div class="space-y-2 text-xs text-slate-400">
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Order-invariant</span>: Equivalent code with different ordering is treated equally</p>
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Semantically meaningful</span>: Measures actual structural understanding</p>
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Edit-sensitive</span>: Detects instruction-conditioned modifications</p>
+                    </div>
+                </div>
+
+                <!-- Extraction method -->
+                <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                    <h4 class="text-sm font-bold text-slate-300 mb-3">
+                        <i class="fa-solid fa-code text-amber-400 mr-2"></i>Extraction Method
+                    </h4>
+                    <div class="space-y-2 text-xs text-slate-400">
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Primitives extracted from <span class="text-amber-400 font-mono">TikZ/LaTeX syntax</span></p>
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Domain-specific parsers for each package</p>
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Direct comparison without rendering</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Progressive Task Framework (S3 Detail) -->
+    <section class="slide" data-index="10">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    A2 · Solution S3 Details
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Progressive Task Framework: <span class="text-purple-400">D2C → DE → DU</span></h2>
+                <p class="text-slate-400 mt-2">Each task builds upon capabilities required by the previous one</p>
+            </div>
+
+            <div class="flex items-stretch gap-3">
+                <!-- D2C -->
+                <div class="flex-1 animate-fade-up">
+                    <div class="bg-gradient-to-b from-blue-500/20 to-blue-500/5 p-4 rounded-2xl border border-blue-500/30 h-full">
+                        <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center mx-auto mb-2">
+                            <span class="text-sm font-bold text-white">D2C</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-blue-400 text-center mb-2">Diagram-to-Code</h3>
+                        <ul class="text-slate-300 space-y-1 text-xs">
+                            <li><i class="fa-solid fa-check text-blue-400 mr-1"></i>Syntax Knowledge</li>
+                            <li><i class="fa-solid fa-check text-blue-400 mr-1"></i>Primitive Recognition</li>
+                            <li><i class="fa-solid fa-check text-blue-400 mr-1"></i>Primitive-to-Syntax Mapping</li>
+                        </ul>
+                        <div class="mt-2 p-2 bg-blue-500/10 rounded-lg">
+                            <p class="text-xs text-blue-400 text-center font-bold">Output: Code</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center text-2xl text-slate-600">→</div>
+
+                <!-- DE -->
+                <div class="flex-1 animate-fade-up" style="animation-delay: 0.1s;">
+                    <div class="bg-gradient-to-b from-emerald-500/20 to-emerald-500/5 p-4 rounded-2xl border border-emerald-500/30 h-full">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center mx-auto mb-2">
+                            <span class="text-sm font-bold text-white">DE</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-emerald-400 text-center mb-2">Diagram Editing</h3>
+                        <ul class="text-slate-300 space-y-1 text-xs">
+                            <li><i class="fa-solid fa-check text-emerald-400 mr-1"></i>All D2C abilities</li>
+                            <li><i class="fa-solid fa-plus text-emerald-400 mr-1"></i>Instruction Grounding</li>
+                            <li class="text-slate-500 pl-4 text-xs">NL → code locations</li>
+                        </ul>
+                        <div class="mt-2 p-2 bg-emerald-500/10 rounded-lg">
+                            <p class="text-xs text-emerald-400 text-center font-bold">Output: Edited Code</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center text-2xl text-slate-600">→</div>
+
+                <!-- DU -->
+                <div class="flex-1 animate-fade-up" style="animation-delay: 0.2s;">
+                    <div class="bg-gradient-to-b from-purple-500/20 to-purple-500/5 p-4 rounded-2xl border border-purple-500/30 h-full">
+                        <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center mx-auto mb-2">
+                            <span class="text-sm font-bold text-white">DU</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-purple-400 text-center mb-2">Diagram Understanding</h3>
+                        <ul class="text-slate-300 space-y-1 text-xs">
+                            <li><i class="fa-solid fa-check text-purple-400 mr-1"></i>All D2C + DE abilities</li>
+                            <li><i class="fa-solid fa-plus text-purple-400 mr-1"></i>Domain Semantics</li>
+                            <li><i class="fa-solid fa-plus text-purple-400 mr-1"></i>Symbolic Reasoning</li>
+                        </ul>
+                        <div class="mt-2 p-2 bg-purple-500/10 rounded-lg">
+                            <p class="text-xs text-purple-400 text-center font-bold">Output: Answer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-4 animate-fade-up">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-red-500/30">
+                    <p class="text-xs text-slate-300">
+                        <span class="text-red-400 font-bold">D2C fails</span> + valid syntax<br>
+                        <span class="text-slate-400">→ Primitive recognition/grounding issue</span>
+                    </p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-amber-500/30">
+                    <p class="text-xs text-slate-300">
+                        <span class="text-amber-400 font-bold">D2C passes, DE fails</span><br>
+                        <span class="text-slate-400">→ Instruction grounding issue</span>
+                    </p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-purple-500/30">
+                    <p class="text-xs text-slate-300">
+                        <span class="text-purple-400 font-bold">DE passes, DU fails</span><br>
+                        <span class="text-slate-400">→ Symbolic understanding issue</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-microscope text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Diagnostic Power:</span>
+                        Pinpoint exactly <span class="text-white font-semibold">where</span> and <span class="text-white font-semibold">what</span> ability a model lacks
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 11: Benchmark Comparison -->
+    <section class="slide" data-index="11">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    A2 · Comparison
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Comparison with <span class="text-blue-400">Existing Benchmarks</span></h2>
+                <p class="text-slate-400 mt-2">Our benchmark provides the most comprehensive evaluation coverage</p>
+            </div>
+
+            <div class="animate-fade-up overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-blue-500/20">
+                            <th class="p-3 text-left text-blue-400 font-bold rounded-tl-xl">Benchmark</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">#Subjects</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">D2C</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">DE</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">DU</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Token</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Primitive</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Global</th>
+                            <th class="p-3 text-center text-blue-400 font-bold rounded-tr-xl">Sub-Ability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">SGP-Bench</td>
+                            <td class="p-2 text-center text-slate-400">2</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">Design2Code</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">ChartMimic</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">Plot2Code</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">✓</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="bg-blue-500/10">
+                            <td class="p-2 text-blue-400 font-bold rounded-bl-xl">Ours</td>
+                            <td class="p-2 text-center text-blue-400 font-bold">8</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">✓</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold rounded-br-xl">✓</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-6 grid grid-cols-4 gap-4 animate-fade-up">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-cyan-500/30 text-center">
+                    <span class="text-2xl font-bold text-cyan-400">7,424</span>
+                    <p class="text-slate-400 text-sm">Total Diagrams</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-blue-500/30 text-center">
+                    <span class="text-2xl font-bold text-blue-400">8</span>
+                    <p class="text-slate-400 text-sm">Categories</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-2xl font-bold text-emerald-400">3</span>
+                    <p class="text-slate-400 text-sm">Evaluation Levels</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-purple-500/30 text-center">
+                    <span class="text-2xl font-bold text-purple-400">3</span>
+                    <p class="text-slate-400 text-sm">Progressive Tasks</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 12: Data Link & Demo -->
+    <section class="slide" data-index="12">
+        <div class="max-w-5xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Browse <span class="text-emerald-400">Dataset Samples</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Data Categories -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-slate-300 mb-4">
+                            <i class="fa-solid fa-code mr-3 text-blue-400"></i>
+                            LaTeX Packages Used
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between p-2 rounded bg-blue-500/10">
+                                <span class="text-blue-400 font-mono text-sm">pgfplots</span>
+                                <span class="text-slate-400 text-xs">Charts & Plots</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10">
+                                <span class="text-emerald-400 font-mono text-sm">tkz-euclide</span>
+                                <span class="text-slate-400 text-xs">Euclidean Geometry</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded bg-purple-500/10">
+                                <span class="text-purple-400 font-mono text-sm">tikz-network</span>
+                                <span class="text-slate-400 text-xs">Graph Networks</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded bg-amber-500/10">
+                                <span class="text-amber-400 font-mono text-sm">chemfig</span>
+                                <span class="text-slate-400 text-xs">Chemical Structures</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded bg-red-500/10">
+                                <span class="text-red-400 font-mono text-sm">circuitikz</span>
+                                <span class="text-slate-400 text-xs">Circuit Diagrams</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded bg-cyan-500/10">
+                                <span class="text-cyan-400 font-mono text-sm">tikz (base)</span>
+                                <span class="text-slate-400 text-xs">General Diagrams</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Link -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 p-6 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-2xl font-bold text-emerald-400 mb-4">
+                            <i class="fa-solid fa-link mr-3"></i>
+                            Live Data & Demos
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="bg-slate-800/70 p-3 rounded-xl text-center">
+                                <div class="text-2xl font-bold text-cyan-400">7,424</div>
+                                <div class="text-xs text-slate-400">Total Diagrams</div>
+                            </div>
+                            <div class="bg-slate-800/70 p-3 rounded-xl text-center">
+                                <div class="text-2xl font-bold text-emerald-400">98.6%</div>
+                                <div class="text-xs text-slate-400">Compile Rate</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/70 p-4 rounded-xl mb-4">
+                            <p class="text-slate-300 mb-3">Browse all samples with code:</p>
+                            <a href="https://weihao-bo.github.io/paper_summary/2025_diagram_with_latex_dataset.html"
+                               target="_blank"
+                               class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg hover:bg-emerald-500/30 transition-colors">
+                                <i class="fa-solid fa-external-link"></i>
+                                Dataset Samples
+                            </a>
+                        </div>
+
+                        <div class="p-3 bg-slate-700/30 rounded-xl">
+                            <p class="text-slate-400 text-sm">
+                                <i class="fa-solid fa-info-circle text-blue-400 mr-2"></i>
+                                167 source files from documentation & papers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 13: Thank You -->
+    <section class="slide" data-index="13">
+        <div class="text-center max-w-4xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-diagram-project text-blue-400" style="font-size: 60px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight text-5xl text-white mb-6">
+                Thank You
+            </h1>
+            <p class="text-2xl text-slate-300 mb-8">
+                Questions & Discussion
+            </p>
+            <div class="inline-block bg-slate-800/50 p-6 rounded-2xl border border-blue-500/30">
+                <p class="text-xl text-slate-300 mb-4">Key Takeaways:</p>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <span class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg">Structural perception gap</span>
+                    <span class="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg">Code as evidence</span>
+                    <span class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg">Primitive-level metrics</span>
+                    <span class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg">Progressive diagnosis</span>
+                </div>
+            </div>
+            <div class="mt-8">
+                <a href="https://weihao-bo.github.io/paper_summary/2025_diagram_with_latex_dataset.html"
+                   target="_blank"
+                   class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-lg hover:bg-emerald-500/30 transition-colors text-lg">
+                    <i class="fa-solid fa-external-link"></i>
+                    View Dataset Samples
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-pages').textContent = totalSlides;
+
+        // Create nav dots
+        const navDotsContainer = document.getElementById('nav-dots');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.onclick = function(e) {
+                e.stopPropagation();
+                goToSlide(i);
+            };
+            navDotsContainer.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+            document.getElementById('current-page').textContent = currentSlide + 1;
+
+            // Update nav dots
+            const dots = document.querySelectorAll('.nav-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>
