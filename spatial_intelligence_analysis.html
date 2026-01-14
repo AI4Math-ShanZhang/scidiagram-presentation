@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Intelligence Analysis: Atomic Abilities Framework</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #7c3aed;
+            --accent-color: #059669;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        header .meta {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .section h3 {
+            color: var(--secondary-color);
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .section h4 {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin: 1.2rem 0 0.8rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+            border-left: 4px solid var(--primary-color);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            border-left: 4px solid var(--accent-color);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fefce8, #fef9c3);
+            border-left: 4px solid #eab308;
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .mermaid {
+            background: #fafafa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .formula {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .ability-profile {
+            font-family: 'Courier New', monospace;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .ability-profile .header {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        .ability-profile .bottleneck {
+            color: #f87171;
+        }
+
+        .ability-profile .good {
+            color: #4ade80;
+        }
+
+        ul, ol {
+            margin: 1rem 0 1rem 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-blue { background: #dbeafe; color: #1e40af; }
+        .tag-purple { background: #ede9fe; color: #5b21b6; }
+        .tag-green { background: #d1fae5; color: #065f46; }
+        .tag-yellow { background: #fef3c7; color: #92400e; }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            body {
+                padding: 1rem;
+            }
+        }
+
+        .benchmark-card {
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .benchmark-card h4 {
+            margin-top: 0;
+        }
+
+        .results-table td:nth-child(3),
+        .results-table td:nth-child(4) {
+            font-family: 'Courier New', monospace;
+        }
+
+        .improvement {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .toc {
+            background: #f8fafc;
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--text-color);
+        }
+
+        .toc ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc li {
+            padding: 0.3rem 0;
+        }
+
+        .toc a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .weight-critical { color: #dc2626; font-weight: bold; }
+        .weight-important { color: #ea580c; }
+        .weight-minor { color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Spatial Intelligence in Vision-Language Models</h1>
+            <p class="subtitle">An Atomic Abilities Framework for Understanding and Improving Spatial Reasoning</p>
+            <p class="meta">Based on analysis of "Euclid's Gift" paper and benchmarks (VSI-Bench, MindCube)</p>
+        </header>
+
+        <nav class="toc section">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#paper-overview">1. Paper Overview: Euclid's Gift</a></li>
+                <li><a href="#spatial-definition">2. What is Spatial Intelligence?</a></li>
+                <li><a href="#benchmarks">3. Key Benchmarks: VSI-Bench & MindCube</a></li>
+                <li><a href="#core-insight">4. Core Insight: Compositional Intelligence</a></li>
+                <li><a href="#atomic-abilities">5. The 10 Atomic Abilities Framework</a></li>
+                <li><a href="#task-decomposition">6. Task Decomposition Matrix</a></li>
+                <li><a href="#geometry-connection">7. Why Geometry Training Works</a></li>
+                <li><a href="#bottleneck">8. Bottleneck Analysis</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1: Paper Overview -->
+        <section id="paper-overview" class="section">
+            <h2>1. Paper Overview: Euclid's Gift</h2>
+
+            <div class="highlight-box">
+                <strong>Title:</strong> Euclid's Gift: Enhancing Spatial Perception and Reasoning in Vision-Language Models via Geometric Surrogate Tasks<br><br>
+                <strong>Core Idea:</strong> Using geometry problems (plane and solid geometry) as a "surrogate task" to train MLLMs improves their general spatial intelligence abilities.
+            </div>
+
+            <h3>Key Contributions</h3>
+            <ul>
+                <li>Created <strong>Euclid30K</strong> — a dataset of ~30,000 geometry problems (plane + solid geometry)</li>
+                <li>Fine-tuned models using <strong>GRPO (Group Relative Policy Optimization)</strong></li>
+                <li>First systematic study showing geometry-centric fine-tuning confers transferable spatial skills</li>
+            </ul>
+
+            <h3>Results</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Benchmark</th>
+                        <th>Before</th>
+                        <th>After</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>VSI-Bench</td>
+                        <td>36.6%</td>
+                        <td>41.8%</td>
+                        <td class="improvement">+5.2%</td>
+                    </tr>
+                    <tr>
+                        <td>MindCube</td>
+                        <td>31.4%</td>
+                        <td>38.1%</td>
+                        <td class="improvement">+6.7%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 2: Definition -->
+        <section id="spatial-definition" class="section">
+            <h2>2. What is Spatial Intelligence?</h2>
+
+            <div class="highlight-box">
+                <strong>Definition:</strong> The capacity to <em>perceive and mentally manipulate spatial relationships</em> — understanding and interacting with 3D environments through visual observation.
+            </div>
+
+            <h3>Foundational Abilities Required</h3>
+
+            <div class="mermaid">
+graph TD
+    SI[Spatial Intelligence] --> VP[Visual Perception]
+    SI --> LI[Linguistic Intelligence]
+    SI --> TP[Temporal Processing]
+    SI --> SR[Spatial Reasoning]
+
+    VP --> VP1[Object Recognition]
+    VP --> VP2[Scene Understanding]
+
+    SR --> SR1[Relational Reasoning<br/>distance & direction]
+    SR --> SR2[Egocentric-Allocentric<br/>Transformation]
+
+    style SI fill:#2563eb,color:#fff
+    style VP fill:#7c3aed,color:#fff
+    style LI fill:#7c3aed,color:#fff
+    style TP fill:#7c3aed,color:#fff
+    style SR fill:#7c3aed,color:#fff
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Visual Perception</strong></td>
+                        <td>Recognizing and identifying objects in environments</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Linguistic Intelligence</strong></td>
+                        <td>Understanding spatial concepts through language</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Temporal Processing</strong></td>
+                        <td>Tracking changes and sequences over time</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Spatial Reasoning</strong></td>
+                        <td>Understanding distance/direction relationships + converting self-centered views to environment-centered understanding</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 3: Benchmarks -->
+        <section id="benchmarks" class="section">
+            <h2>3. Key Benchmarks: VSI-Bench & MindCube</h2>
+
+            <div class="two-column">
+                <div class="benchmark-card">
+                    <h4>VSI-Bench (Video Spatial Intelligence)</h4>
+                    <p><strong>Source:</strong> NYU Vision Lab — "Thinking in Space"</p>
+                    <p><strong>Scale:</strong> 5,000+ QA pairs from 288 real indoor videos</p>
+
+                    <h4>Three Task Categories & 8 Tasks:</h4>
+                    <table>
+                        <tr>
+                            <th>Category</th>
+                            <th>Tasks</th>
+                        </tr>
+                        <tr>
+                            <td><span class="tag tag-blue">Configurational</span></td>
+                            <td>Object Count, Relative Distance, Relative Direction, Route Plan</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tag tag-purple">Measurement</span></td>
+                            <td>Object Size, Room Size, Absolute Distance</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tag tag-green">Spatiotemporal</span></td>
+                            <td>Appearance Order</td>
+                        </tr>
+                    </table>
+
+                    <div class="warning-box">
+                        <strong>Key Finding:</strong> Spatial reasoning is the <em>primary bottleneck</em> — not visual perception or language understanding.
+                    </div>
+                </div>
+
+                <div class="benchmark-card">
+                    <h4>MindCube</h4>
+                    <p><strong>Focus:</strong> Spatial mental modeling from <em>limited views</em> (2-4 images)</p>
+                    <p><strong>Scale:</strong> 21,154 questions across 3,268 images</p>
+
+                    <h4>Three Core Capabilities Tested:</h4>
+                    <table>
+                        <tr>
+                            <th>Capability</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Cognitive Mapping</strong></td>
+                            <td>Building mental representation of positions/layout</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Perspective-Taking</strong></td>
+                            <td>Understanding orientations from different viewpoints</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mental Simulation</strong></td>
+                            <td>Predicting "what-if" movements and dynamics</td>
+                        </tr>
+                    </table>
+
+                    <div class="insight-box">
+                        <strong>Key Insight:</strong> Training VLMs to first generate cognitive maps, then reason upon them:<br>
+                        Baseline: <strong>37.8%</strong> → With maps: <strong>60.8%</strong> (+23%) → With RL: <strong>70.7%</strong> (+32.9%)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Core Insight -->
+        <section id="core-insight" class="section">
+            <h2>4. Core Insight: Compositional Intelligence</h2>
+
+            <div class="highlight-box">
+                <strong>Key Observation:</strong> Just like math training helps with real-world problems, geometry training helps with spatial tasks even when the domains are completely different (diagrams vs real images). Why?
+            </div>
+
+            <h3>Current Approach (Task-Defined) vs. Our Perspective (Modular Ability-Defined)</h3>
+
+            <p>Current spatial intelligence benchmarks define the capability by <strong>specific subtasks</strong> (room size, object count, distance estimation). But we believe spatial intelligence should be defined by <strong>modular atomic abilities</strong> — if you master these primitive abilities, you can compose them to solve any spatial task. Complex tasks simply require more atomic abilities with different weights.</p>
+
+            <div class="mermaid">
+graph TD
+    subgraph "Current Approach: Task-Centric"
+        T1[Room Size Task] --> Train1[Train on room size data]
+        T2[Distance Task] --> Train2[Train on distance data]
+        T3[Counting Task] --> Train3[Train on counting data]
+    end
+
+    subgraph "Proposed Approach: Ability-Centric"
+        A1[Atomic Ability 1]
+        A2[Atomic Ability 2]
+        A3[Atomic Ability 3]
+        A4[Atomic Ability 4]
+
+        A1 & A2 & A3 --> T1'[Room Size]
+        A2 & A4 --> T2'[Distance]
+        A1 & A3 --> T3'[Counting]
+    end
+
+    style T1 fill:#fee2e2
+    style T2 fill:#fee2e2
+    style T3 fill:#fee2e2
+    style T1' fill:#d1fae5
+    style T2' fill:#d1fae5
+    style T3' fill:#d1fae5
+            </div>
+
+            <div class="formula">
+                <strong>Task Performance</strong> = Σ<sub>i</sub> w<sub>i</sub> × AtomicAbility<sub>i</sub>
+            </div>
+
+            <p>Different tasks have different weight distributions over the same set of primitive abilities. Complex abilities are built from atomic/primitive skills — this is the <strong>compositionality of intelligence</strong>.</p>
+        </section>
+
+        <!-- Section 5: Atomic Abilities -->
+        <section id="atomic-abilities" class="section">
+            <h2>5. The 10 Atomic Abilities Framework</h2>
+
+            <p>Drawing from cognitive science research on spatial cognition, we propose 10 core primitive abilities organized in 4 levels:</p>
+
+            <div class="mermaid">
+graph TB
+    subgraph "Level 4: Integration"
+        INT[A10: Spatial Integration<br/>Combine across time/views]
+    end
+
+    subgraph "Level 3: Reasoning"
+        MET[A7: Metric Reasoning<br/>Exact numbers]
+        ORD[A8: Ordinal Reasoning<br/>Comparisons]
+        TOP[A9: Topological Reasoning<br/>Connectivity/Containment]
+    end
+
+    subgraph "Level 2: Transformation"
+        ROT[A4: Mental Rotation]
+        PER[A5: Perspective Transform<br/>Ego↔Allo]
+        SCA[A6: Scale Transform]
+    end
+
+    subgraph "Level 1: Perception"
+        OBJ[A1: Object Recognition]
+        DEP[A2: Depth Perception]
+        SIZ[A3: Size Constancy]
+    end
+
+    OBJ & DEP & SIZ --> ROT & PER & SCA
+    ROT & PER & SCA --> MET & ORD & TOP
+    MET & ORD & TOP --> INT
+
+    style INT fill:#fef3c7
+    style MET fill:#fef3c7
+    style ORD fill:#d1fae5
+    style TOP fill:#d1fae5
+    style ROT fill:#dbeafe
+    style PER fill:#dbeafe
+    style SCA fill:#dbeafe
+    style OBJ fill:#e0e7ff
+    style DEP fill:#e0e7ff
+    style SIZ fill:#fce7f3
+            </div>
+
+            <h3>Level 1: Perception Primitives</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>What It Does</th>
+                        <th>Cognitive Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A1: Object Recognition</strong></td>
+                        <td>Identify and segment objects from background</td>
+                        <td>Visual cortex, ventral stream</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A2: Depth Perception</strong></td>
+                        <td>Estimate distance from viewer to objects</td>
+                        <td>Monocular cues (occlusion, texture gradient, perspective)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A3: Size Constancy</strong></td>
+                        <td>Know real-world size despite visual angle changes</td>
+                        <td>Learned prior: "doors are ~2m tall"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Level 2: Transformation Primitives</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>What It Does</th>
+                        <th>Cognitive Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A4: Mental Rotation</strong></td>
+                        <td>Rotate object mentally to different orientation</td>
+                        <td>Parietal cortex, tested by Shepard & Metzler</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A5: Perspective Transform</strong></td>
+                        <td>Change viewpoint (ego→allo, allo→ego)</td>
+                        <td>Hippocampus, place cells</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A6: Scale Transform</strong></td>
+                        <td>Map between image scale and real-world scale</td>
+                        <td>Requires calibration anchors</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Level 3: Reasoning Primitives</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>What It Does</th>
+                        <th>Cognitive Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A7: Metric Reasoning</strong></td>
+                        <td>Compute exact numbers (3.5 meters)</td>
+                        <td>Requires calibrated scale</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A8: Ordinal Reasoning</strong></td>
+                        <td>Compare relations (A closer than B)</td>
+                        <td>Simpler than metric, relative judgment</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A9: Topological Reasoning</strong></td>
+                        <td>Understand connectivity, inside/outside, between</td>
+                        <td>Robust to deformation, most primitive</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Level 4: Integration Primitive</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ability</th>
+                        <th>What It Does</th>
+                        <th>Cognitive Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>A10: Spatial Integration</strong></td>
+                        <td>Accumulate information across time/views</td>
+                        <td>Working memory + cognitive map</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 6: Task Decomposition -->
+        <section id="task-decomposition" class="section">
+            <h2>6. Task Decomposition Matrix</h2>
+
+            <p>Mapping benchmark tasks to atomic abilities (●●● = critical, ●● = important, ● = minor):</p>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>A1<br/>Object</th>
+                            <th>A2<br/>Depth</th>
+                            <th>A3<br/>Size</th>
+                            <th>A4<br/>Rotation</th>
+                            <th>A5<br/>Perspective</th>
+                            <th>A6<br/>Scale</th>
+                            <th>A7<br/>Metric</th>
+                            <th>A8<br/>Ordinal</th>
+                            <th>A9<br/>Topo</th>
+                            <th>A10<br/>Integration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Object Count</strong></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-minor">●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Relative Distance</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-minor">●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td class="weight-minor">●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Relative Direction</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-minor">●</td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td class="weight-minor">●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Route Plan</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-minor">●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Object Size</strong></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Room Size</strong></td>
+                            <td class="weight-minor">●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Absolute Distance</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Appearance Order</strong></td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cognitive Map</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Perspective-Taking</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-minor">●</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mental Simulation</strong></td>
+                            <td class="weight-important">●●</td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-critical">●●●</td>
+                            <td class="weight-critical">●●●</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="weight-important">●●</td>
+                            <td class="weight-important">●●</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Ability Dependency Graph</h3>
+            <p>Some abilities are prerequisites for others:</p>
+
+            <div class="mermaid">
+graph LR
+    A1[A1: Object Recognition] --> A2[A2: Depth Perception]
+    A1 --> A8[A8: Ordinal Reasoning]
+
+    A2 --> A6[A6: Scale Transform]
+    A3[A3: Size Constancy] --> A6
+
+    A6 --> A7[A7: Metric Reasoning]
+
+    A4[A4: Mental Rotation] --> A5[A5: Perspective Transform]
+
+    A5 --> A9[A9: Topological Reasoning]
+    A8 --> A9
+
+    A9 --> A10[A10: Spatial Integration]
+    A7 --> A10
+
+    style A1 fill:#e0e7ff
+    style A2 fill:#e0e7ff
+    style A3 fill:#fce7f3
+    style A7 fill:#fef3c7
+    style A10 fill:#fef3c7
+            </div>
+
+            <div class="insight-box">
+                <strong>Key Insight:</strong>
+                <ul>
+                    <li><strong>Bottom abilities</strong> (A1, A2, A3) are perception-based — models likely already have these</li>
+                    <li style="background: linear-gradient(90deg, #fef08a, #fde047); padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0;"><strong>⭐ Middle abilities</strong> (A4, A5, A6) are transformation-based — <strong>geometry training helps here</strong></li>
+                    <li><strong>Top abilities</strong> (A7, A10) require calibration and integration — hardest for models</li>
+                </ul>
+            </div>
+
+            <div class="warning-box" style="background: linear-gradient(135deg, #fef9c3, #fef08a); border-left-color: #eab308;">
+                <strong>📌 Our Focus:</strong> This is where we should concentrate our efforts — designing geometric datasets specifically targeting these <strong>transformation abilities (A4: Mental Rotation, A5: Perspective Transform, A6: Scale Transform)</strong>. By training on well-designed geometry problems, we can improve these middle-layer abilities which then transfer to real-world spatial tasks.
+            </div>
+        </section>
+
+        <!-- Section 7: Geometry Connection -->
+        <section id="geometry-connection" class="section">
+            <h2>7. Why Geometry Training Works</h2>
+
+            <p>Geometry problems specifically train certain atomic abilities:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Geometry Task</th>
+                        <th>Atomic Abilities Trained</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Rotate this shape</td>
+                        <td><span class="tag tag-blue">A4: Mental Rotation</span></td>
+                    </tr>
+                    <tr>
+                        <td>What angle from point P?</td>
+                        <td><span class="tag tag-purple">A5: Perspective Transform</span></td>
+                    </tr>
+                    <tr>
+                        <td>Calculate the length</td>
+                        <td><span class="tag tag-yellow">A7: Metric Reasoning</span></td>
+                    </tr>
+                    <tr>
+                        <td>Which is larger?</td>
+                        <td><span class="tag tag-green">A8: Ordinal Reasoning</span></td>
+                    </tr>
+                    <tr>
+                        <td>Is point inside triangle?</td>
+                        <td><span class="tag tag-green">A9: Topological Reasoning</span></td>
+                    </tr>
+                    <tr>
+                        <td>3D solid → 2D projection</td>
+                        <td><span class="tag tag-purple">A5: Perspective</span> <span class="tag tag-blue">A6: Scale</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <strong>What Geometry Doesn't Train:</strong><br>
+                Geometry <strong>doesn't train A3 (Size Constancy)</strong> — this is why models still struggle with real-world size estimation even after geometry training. They lack the <strong>calibration prior</strong> (knowing a door is 2m, a car is 4m, etc.).
+            </div>
+
+            <div class="insight-box">
+                <strong>The Transfer Mystery Explained:</strong><br>
+                The reason geometry helps is <em>not</em> because geometry and real-world spatial tasks <strong>look similar</strong> — they don't.<br><br>
+                It's because they share <strong>atomic abilities</strong> (A4, A5, A7, A8, A9).<br><br>
+                But geometry <strong>cannot help</strong> with abilities it doesn't train (A3, A6, A10), which explains why the improvement is +5-7%, not +30%.
+            </div>
+        </section>
+
+        <!-- Section 8: Bottleneck Analysis -->
+        <section id="bottleneck" class="section">
+            <h2>8. Bottleneck Analysis</h2>
+
+            <div class="two-column">
+                <div>
+                    <h3>Easy for Current MLLMs</h3>
+                    <ul>
+                        <li><strong>A1 (Object Recognition)</strong>: Vision encoders are strong here</li>
+                        <li><strong>A8 (Ordinal Reasoning)</strong>: Comparisons are relatively easy</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Hard for Current MLLMs</h3>
+                    <ul>
+                        <li><strong>A3 (Size Constancy)</strong>: Requires world knowledge grounding</li>
+                        <li><strong>A6 (Scale Transform)</strong>: Need calibration anchors</li>
+                        <li><strong>A7 (Metric Reasoning)</strong>: Exact numbers are hard without calibration</li>
+                        <li><strong>A10 (Spatial Integration)</strong>: Accumulating across video frames is challenging</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>This Explains Benchmark Results</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Key Abilities</th>
+                        <th>Model Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Relative Distance</td>
+                        <td>Uses A8 (ordinal) — easy</td>
+                        <td class="improvement">Models do okay</td>
+                    </tr>
+                    <tr>
+                        <td>Absolute Distance</td>
+                        <td>Uses A7 (metric) — hard</td>
+                        <td style="color: #dc2626;">Models struggle</td>
+                    </tr>
+                    <tr>
+                        <td>Object Count</td>
+                        <td>Uses A1 + A10 (integration)</td>
+                        <td style="color: #dc2626;">Fails when integration needed</td>
+                    </tr>
+                </tbody>
+            </table>
+
+                    </section>
+
+        <footer>
+            <p>Analysis based on "Euclid's Gift" paper and related spatial intelligence research</p>
+            <p>References: <a href="https://arxiv.org/abs/2509.24473">Euclid's Gift</a> | <a href="https://vision-x-nyu.github.io/thinking-in-space.github.io/">VSI-Bench</a> | <a href="https://mind-cube.github.io/">MindCube</a></p>
+            <p>Generated: January 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#dbeafe',
+                primaryTextColor: '#1e40af',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#64748b',
+                secondaryColor: '#f0fdf4',
+                tertiaryColor: '#fef3c7'
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ]
+            });
+        });
+    </script>
+</body>
+</html>
