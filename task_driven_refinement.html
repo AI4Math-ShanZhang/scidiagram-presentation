@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task-Driven Region Refinement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+        h2 {
+            color: #ffd700;
+            margin: 30px 0 15px 0;
+            font-size: 1.4em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* Pipeline diagram */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .pipeline-stage {
+            background: #2a2a4a;
+            border-radius: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .pipeline-stage.active {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+        }
+        .pipeline-stage .stage-num {
+            font-size: 0.8em;
+            color: #888;
+        }
+        .pipeline-stage.active .stage-num {
+            color: rgba(255,255,255,0.7);
+        }
+        .pipeline-stage .stage-name {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .pipeline-arrow {
+            font-size: 24px;
+            color: #3a7bd5;
+        }
+
+        /* Main visualization area */
+        .vis-container {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .vis-panel {
+            flex: 1;
+            min-width: 280px;
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .vis-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00d2ff;
+            font-size: 0.95em;
+        }
+
+        /* Canvas for drawing */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        label {
+            min-width: 180px;
+            color: #aaa;
+        }
+        input[type="range"] {
+            flex: 1;
+            min-width: 150px;
+            height: 8px;
+            border-radius: 4px;
+            background: #444;
+            cursor: pointer;
+        }
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #ff6b6b, #ffd700);
+        }
+        .btn-tertiary {
+            background: #666;
+        }
+
+        /* Task selector */
+        .task-selector {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .task-btn {
+            padding: 10px 20px;
+            border: 2px solid #3a7bd5;
+            background: transparent;
+            color: #3a7bd5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .task-btn.active {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border-color: transparent;
+        }
+        .task-btn:hover:not(.active) {
+            background: rgba(58, 123, 213, 0.2);
+        }
+
+        /* Gradient visualization */
+        .gradient-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .legend-arrow {
+            width: 30px;
+            height: 3px;
+            position: relative;
+        }
+        .legend-arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            border: 5px solid transparent;
+            border-left-color: inherit;
+        }
+
+        /* Formula display */
+        .formula-box {
+            background: #1e1e3e;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .formula {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.3em;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+        .formula-desc {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        /* Insight box */
+        .insight {
+            background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,210,255,0.1));
+            border-left: 4px solid #ffd700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .insight-title {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Stats panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            background: #1e1e3e;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00d2ff;
+        }
+        .stat-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* Animation indicator */
+        .animation-indicator {
+            text-align: center;
+            padding: 10px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .animation-indicator.hidden {
+            display: none;
+        }
+
+        /* Comparison section */
+        .comparison-container {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .comparison-panel {
+            flex: 1;
+            min-width: 400px;
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task-Driven Region Refinement</h1>
+        <p class="subtitle">From content-driven initialization to task-optimized tokenization via gradient descent</p>
+
+        <!-- Pipeline overview -->
+        <div class="pipeline">
+            <div class="pipeline-stage">
+                <div class="stage-num">Stage 1</div>
+                <div class="stage-name">Entropy Init</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage active">
+                <div class="stage-num">Stage 2</div>
+                <div class="stage-name">Task Gradients</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-stage">
+                <div class="stage-num">Stage 3</div>
+                <div class="stage-name">Refined Tokens</div>
+            </div>
+        </div>
+
+        <!-- Formula display -->
+        <div class="formula-box">
+            <div class="formula">u<sub>final</sub> = u<sub>base</sub> + Δu &nbsp;&nbsp;&nbsp; σ<sub>final</sub> = σ<sub>base</sub> + Δσ</div>
+            <div class="formula-desc">
+                Position (u) and scale (σ) are refined by learnable offsets from task gradients
+            </div>
+        </div>
+
+        <!-- Top Action Bar - visible with visualization -->
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin: 20px 0; padding: 15px; background: #2a2a4a; border-radius: 12px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="runOptimization()">Run Optimization</button>
+                <button onclick="stepOptimization()" style="background: linear-gradient(135deg, #ff6b6b, #ffd700);">Single Step</button>
+                <button onclick="resetDemo()" style="background: #666;">Reset</button>
+            </div>
+            <div style="flex: 1;"></div>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="color: #aaa; font-size: 0.85em;">Tokens:</label>
+                    <input type="range" id="numTokensTop" min="4" max="32" value="12" style="width: 80px;" onchange="syncTokens(this.value)">
+                    <span style="color: #ffd700; font-weight: bold; min-width: 25px;" id="numTokensTopVal">12</span>
+                </div>
+            </div>
+            <div id="animIndicatorTop" class="animation-indicator hidden" style="margin-left: 10px;">Optimizing...</div>
+        </div>
+
+        <!-- Task selector -->
+        <h2>Select Vision Task</h2>
+        <div class="task-selector">
+            <button class="task-btn active" onclick="selectTask('detection')">Object Detection</button>
+            <button class="task-btn" onclick="selectTask('segmentation')">Segmentation</button>
+            <button class="task-btn" onclick="selectTask('depth')">Depth Estimation</button>
+            <button class="task-btn" onclick="selectTask('keypoint')">Keypoint Detection</button>
+        </div>
+
+        <!-- Main visualization -->
+        <div class="vis-container">
+            <div class="vis-panel">
+                <div class="vis-title">Initial (Entropy-Based)</div>
+                <div class="canvas-wrapper">
+                    <canvas id="initialCanvas"></canvas>
+                </div>
+            </div>
+            <div class="vis-panel">
+                <div class="vis-title">Gradient Field (∂L/∂u, ∂L/∂σ)</div>
+                <div class="canvas-wrapper">
+                    <canvas id="gradientCanvas"></canvas>
+                </div>
+            </div>
+            <div class="vis-panel">
+                <div class="vis-title">Refined (Task-Optimized)</div>
+                <div class="canvas-wrapper">
+                    <canvas id="refinedCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gradient legend -->
+        <div class="gradient-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(231, 76, 60, 0.5); border: 1px dashed #e74c3c;"></div>
+                <span>Original position (ghost)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: transparent; border: 2px solid #4ecdc4;"></div>
+                <span>Refined position</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #ffd700; font-weight: bold;">→</span>
+                <span>Position shift (Δu)</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #4ecdc4; font-size: 1.2em;">+σ/-σ</span>
+                <span>Scale change (Δσ)</span>
+            </div>
+        </div>
+
+        <!-- Animation indicator -->
+        <div id="animationIndicator" class="animation-indicator hidden">
+            Optimizing... Step <span id="stepCount">0</span>/50
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <label>Number of Tokens:</label>
+                <input type="range" id="numTokens" min="4" max="32" value="12">
+                <span class="value-display" id="numTokensValue">12</span>
+            </div>
+            <div class="control-row">
+                <label>Learning Rate (Δu):</label>
+                <input type="range" id="lrPosition" min="0.01" max="0.5" value="0.08" step="0.01">
+                <span class="value-display" id="lrPositionValue">0.08</span>
+            </div>
+            <div class="control-row">
+                <label>Learning Rate (Δσ):</label>
+                <input type="range" id="lrScale" min="0.01" max="0.3" value="0.05" step="0.01">
+                <span class="value-display" id="lrScaleValue">0.05</span>
+            </div>
+            <div class="control-row">
+                <label>Gradient Noise:</label>
+                <input type="range" id="gradientNoise" min="0" max="0.5" value="0.1" step="0.05">
+                <span class="value-display" id="gradientNoiseValue">0.1</span>
+            </div>
+            <div class="control-row" style="justify-content: center; margin-top: 20px; gap: 15px;">
+                <button onclick="runOptimization()">Run Optimization</button>
+                <button class="btn-secondary" onclick="stepOptimization()">Single Step</button>
+                <button class="btn-tertiary" onclick="resetDemo()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <h2>Refinement Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="avgDeltaU">0.0</div>
+                <div class="stat-label">Avg |Δu| (pixels)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgDeltaSigma">0.0</div>
+                <div class="stat-label">Avg |Δσ|</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="coverageChange">0%</div>
+                <div class="stat-label">Coverage Change</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="taskLoss">1.0</div>
+                <div class="stat-label">Task Loss</div>
+            </div>
+        </div>
+
+        <!-- Key insight -->
+        <div class="insight">
+            <div class="insight-title">Key Insight: Subtle Task-Specific Adaptation</div>
+            <p>
+                <strong>Object Detection:</strong> Regions gently shift toward object centers, subtle scale alignment<br>
+                <strong>Segmentation:</strong> Slight movement toward boundaries, minor scale reduction for edges<br>
+                <strong>Depth Estimation:</strong> Minor adjustments for uniform coverage, gentle scale increase<br>
+                <strong>Keypoint Detection:</strong> Small shifts toward keypoints, subtle scale reduction<br><br>
+                Task gradients produce <strong>subtle refinements</strong> (Δu, Δσ) while preserving the original partition structure!<br>
+                <em style="color: #888;">Note: Changes are intentionally small (~10-25px position, ~2-8 scale) to maintain stable tokenization.</em>
+            </p>
+        </div>
+
+        <!-- Before/After comparison -->
+        <h2>Before/After Comparison</h2>
+        <div class="comparison-container">
+            <div class="comparison-panel">
+                <div class="vis-title">Scale Distribution: σ<sub>base</sub> vs σ<sub>final</sub></div>
+                <div class="canvas-wrapper" style="aspect-ratio: 2/1;">
+                    <canvas id="scaleHistCanvas"></canvas>
+                </div>
+            </div>
+            <div class="comparison-panel">
+                <div class="vis-title">Position Shifts: Δu Vectors</div>
+                <div class="canvas-wrapper" style="aspect-ratio: 2/1;">
+                    <canvas id="positionShiftCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algorithm explanation -->
+        <h2>Gradient Computation (from paper)</h2>
+        <div class="formula-box">
+            <div class="formula" style="font-size: 1.1em;">
+                ∂L/∂u<sub>i</sub> = Σ<sub>j</sub> (∂L/∂A<sub>ij</sub>) · (∂A<sub>ij</sub>/∂u<sub>i</sub>) + Σ<sub>j</sub> (∂L/∂A<sub>ji</sub>) · (∂A<sub>ji</sub>/∂u<sub>i</sub>)
+            </div>
+            <div class="formula-desc" style="margin-top: 15px;">
+                Position gradients come from both <strong>query term</strong> (how this token attends to others)<br>
+                and <strong>key term</strong> (how other tokens attend to this one)
+            </div>
+        </div>
+
+        <div class="formula-box">
+            <div class="formula" style="font-size: 1.1em;">
+                ∂L/∂σ<sub>i</sub> = Σ<sub>j</sub> (∂L/∂A<sub>ij</sub>) · A<sub>ij</sub> · q<sub>i</sub><sup>T</sup> (∂R<sub>σ</sub>/∂σ<sub>i</sub>) k<sub>j</sub>
+            </div>
+            <div class="formula-desc" style="margin-top: 15px;">
+                Scale gradients control the <strong>frequency spectrum</strong>: larger σ → lower frequencies (global patterns),<br>
+                smaller σ → higher frequencies (fine details)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasSize = 400;
+        let currentTask = 'detection';
+        let entropyMap = [];
+        let regions = [];
+        let refinedRegions = [];
+        let gradientField = [];
+        let optimizationStep = 0;
+        let isAnimating = false;
+
+        // Task-specific target configurations
+        const taskConfigs = {
+            detection: {
+                name: 'Object Detection',
+                targets: [
+                    { x: 150, y: 150, r: 60, strength: 1.0 },  // Main object
+                    { x: 300, y: 280, r: 40, strength: 0.8 },  // Secondary object
+                    { x: 80, y: 320, r: 30, strength: 0.6 }    // Small object
+                ],
+                scalePreference: 'match',  // Scales should match object sizes
+                description: 'Tokens move toward object centers'
+            },
+            segmentation: {
+                name: 'Segmentation',
+                targets: [
+                    // Boundary regions (high detail needed)
+                    { x: 200, y: 80, r: 100, strength: 0.3, boundary: true },
+                    { x: 200, y: 200, r: 120, strength: 0.9, boundary: true },
+                    { x: 320, y: 320, r: 50, strength: 0.7, boundary: true }
+                ],
+                scalePreference: 'small',  // Smaller scales for boundary detail
+                description: 'Tokens concentrate at object boundaries'
+            },
+            depth: {
+                name: 'Depth Estimation',
+                targets: [
+                    // Depth discontinuities
+                    { x: 200, y: 150, r: 150, strength: 0.4 },
+                    { x: 200, y: 300, r: 100, strength: 0.3 }
+                ],
+                scalePreference: 'large',  // Larger scales for smooth depth
+                description: 'Uniform coverage with larger receptive fields'
+            },
+            keypoint: {
+                name: 'Keypoint Detection',
+                targets: [
+                    // Specific keypoint locations
+                    { x: 120, y: 100, r: 15, strength: 1.0 },
+                    { x: 280, y: 100, r: 15, strength: 1.0 },
+                    { x: 200, y: 180, r: 15, strength: 0.9 },
+                    { x: 150, y: 280, r: 15, strength: 0.8 },
+                    { x: 250, y: 280, r: 15, strength: 0.8 },
+                    { x: 200, y: 350, r: 15, strength: 0.7 }
+                ],
+                scalePreference: 'tiny',  // Very small scales for precise localization
+                description: 'Tokens collapse to keypoint locations'
+            }
+        };
+
+        // Initialize entropy map (same as original)
+        function initEntropyMap() {
+            entropyMap = [];
+            for (let y = 0; y < canvasSize; y++) {
+                const row = [];
+                for (let x = 0; x < canvasSize; x++) {
+                    let entropy = 0.1;
+
+                    // Circle
+                    const cx = 200, cy = 200, r = 120;
+                    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                    if (Math.abs(dist - r) < 8) entropy = 0.9;
+
+                    // Lines
+                    const d1 = Math.abs((y - 80) - (x - 80));
+                    if (d1 < 4 && x > 60 && x < 200 && y > 60 && y < 200) entropy = 0.85;
+
+                    const d2 = Math.abs((y - 80) - (340 - x));
+                    if (d2 < 4 && x > 200 && x < 340 && y > 60 && y < 200) entropy = 0.85;
+
+                    if (Math.abs(y - 320) < 3 && x > 80 && x < 320) entropy = 0.8;
+                    if (Math.abs(x - 200) < 3 && y > 80 && y < 320) entropy = 0.75;
+
+                    // Small circle
+                    const cx2 = 200, cy2 = 140, r2 = 15;
+                    const dist2 = Math.sqrt((x - cx2) ** 2 + (y - cy2) ** 2);
+                    if (Math.abs(dist2 - r2) < 5) entropy = 0.95;
+
+                    entropy += (Math.random() - 0.5) * 0.1;
+                    entropy = Math.max(0, Math.min(1, entropy));
+                    row.push(entropy);
+                }
+                entropyMap.push(row);
+            }
+        }
+
+        // Calculate region entropy
+        function calculateRegionEntropy(x1, y1, x2, y2) {
+            let sum = 0, count = 0;
+            for (let y = Math.floor(y1); y < Math.floor(y2); y++) {
+                for (let x = Math.floor(x1); x < Math.floor(x2); x++) {
+                    if (y >= 0 && y < canvasSize && x >= 0 && x < canvasSize) {
+                        sum += Math.pow(entropyMap[y][x], 2);
+                        count++;
+                    }
+                }
+            }
+            return count > 0 ? (sum / count) * Math.sqrt(count) : 0;
+        }
+
+        // Adaptive partition (entropy-driven initialization)
+        function adaptivePartition(numTokens) {
+            const minSize = 25;
+            regions = [{
+                x1: 0, y1: 0, x2: canvasSize, y2: canvasSize,
+                entropy: calculateRegionEntropy(0, 0, canvasSize, canvasSize)
+            }];
+
+            while (regions.length < numTokens) {
+                regions.sort((a, b) => b.entropy - a.entropy);
+
+                let splitIdx = -1;
+                for (let i = 0; i < regions.length; i++) {
+                    const r = regions[i];
+                    if (r.x2 - r.x1 > minSize || r.y2 - r.y1 > minSize) {
+                        splitIdx = i;
+                        break;
+                    }
+                }
+
+                if (splitIdx === -1) break;
+
+                const r = regions[splitIdx];
+                regions.splice(splitIdx, 1);
+
+                const w = r.x2 - r.x1, h = r.y2 - r.y1;
+
+                if (w >= h && w > minSize) {
+                    const midX = Math.floor((r.x1 + r.x2) / 2);
+                    regions.push({
+                        x1: r.x1, y1: r.y1, x2: midX, y2: r.y2,
+                        entropy: calculateRegionEntropy(r.x1, r.y1, midX, r.y2)
+                    });
+                    regions.push({
+                        x1: midX, y1: r.y1, x2: r.x2, y2: r.y2,
+                        entropy: calculateRegionEntropy(midX, r.y1, r.x2, r.y2)
+                    });
+                } else if (h > minSize) {
+                    const midY = Math.floor((r.y1 + r.y2) / 2);
+                    regions.push({
+                        x1: r.x1, y1: r.y1, x2: r.x2, y2: midY,
+                        entropy: calculateRegionEntropy(r.x1, r.y1, r.x2, midY)
+                    });
+                    regions.push({
+                        x1: r.x1, y1: midY, x2: r.x2, y2: r.y2,
+                        entropy: calculateRegionEntropy(r.x1, midY, r.x2, r.y2)
+                    });
+                }
+            }
+
+            // Convert to center/scale representation
+            regions = regions.map(r => ({
+                cx: (r.x1 + r.x2) / 2,
+                cy: (r.y1 + r.y2) / 2,
+                sigma: Math.sqrt((r.x2 - r.x1) * (r.y2 - r.y1)) / 4,
+                width: r.x2 - r.x1,
+                height: r.y2 - r.y1,
+                entropy: r.entropy
+            }));
+
+            // Initialize refined regions as copy
+            refinedRegions = regions.map(r => ({ ...r, deltaU: { x: 0, y: 0 }, deltaSigma: 0 }));
+        }
+
+        // Compute task-specific gradients - SUBTLE refinements
+        function computeGradients() {
+            const config = taskConfigs[currentTask];
+            const noise = parseFloat(document.getElementById('gradientNoise').value);
+            gradientField = [];
+
+            // Maximum allowed displacement from initial position
+            const maxDisplacement = 25; // pixels
+
+            refinedRegions.forEach((region, i) => {
+                let gradX = 0, gradY = 0, gradSigma = 0;
+                const originalRegion = regions[i];
+
+                // Calculate current displacement from initial position
+                const currentDispX = region.cx - originalRegion.cx;
+                const currentDispY = region.cy - originalRegion.cy;
+                const currentDisp = Math.sqrt(currentDispX * currentDispX + currentDispY * currentDispY);
+
+                // Find nearest target for this region
+                let nearestTarget = null;
+                let nearestDist = Infinity;
+
+                config.targets.forEach(target => {
+                    const dx = target.x - region.cx;
+                    const dy = target.y - region.cy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestTarget = target;
+                    }
+                });
+
+                // SUBTLE attraction to nearest target
+                if (nearestTarget) {
+                    const dx = nearestTarget.x - region.cx;
+                    const dy = nearestTarget.y - region.cy;
+                    const dist = nearestDist;
+
+                    // Very gentle influence that decays with distance
+                    // Only regions relatively close to targets get noticeable attraction
+                    const proximityFactor = Math.exp(-dist / (canvasSize * 0.25));
+                    const influence = nearestTarget.strength * proximityFactor * 0.15;
+
+                    // Gentle direction toward target
+                    const dirX = dx / (dist + 1);
+                    const dirY = dy / (dist + 1);
+
+                    // Subtle pull - much weaker than before
+                    gradX += influence * dirX * 3;
+                    gradY += influence * dirY * 3;
+
+                    // Scale gradient - subtle adjustment toward preferred scale
+                    const targetSigma = getTargetSigma(nearestTarget, config.scalePreference);
+                    const sigmaDiff = targetSigma - region.sigma;
+                    // Only adjust scale slightly
+                    gradSigma += influence * sigmaDiff * 0.1;
+                }
+
+                // Anchor force: resist moving too far from initial position
+                if (currentDisp > maxDisplacement * 0.5) {
+                    const anchorStrength = (currentDisp - maxDisplacement * 0.5) / maxDisplacement * 0.5;
+                    gradX -= currentDispX / (currentDisp + 1) * anchorStrength * 2;
+                    gradY -= currentDispY / (currentDisp + 1) * anchorStrength * 2;
+                }
+
+                // Add very light noise for natural variation
+                gradX += (Math.random() - 0.5) * noise * 3;
+                gradY += (Math.random() - 0.5) * noise * 3;
+                gradSigma += (Math.random() - 0.5) * noise * 0.5;
+
+                gradientField.push({
+                    x: gradX,
+                    y: gradY,
+                    sigma: gradSigma,
+                    magnitude: Math.sqrt(gradX * gradX + gradY * gradY)
+                });
+            });
+        }
+
+        function getTargetSigma(target, preference) {
+            switch (preference) {
+                case 'match': return target.r / 2;
+                case 'small': return 15;
+                case 'large': return 40;
+                case 'tiny': return 8;
+                default: return 20;
+            }
+        }
+
+        // Apply one optimization step with CONSTRAINTS for subtle changes
+        function applyGradientStep() {
+            const lrPos = parseFloat(document.getElementById('lrPosition').value);
+            const lrScale = parseFloat(document.getElementById('lrScale').value);
+
+            // Hard limits for subtle refinements
+            const maxPositionShift = 25;  // Max pixels from original
+            const maxScaleChange = 8;      // Max sigma change from original
+
+            refinedRegions.forEach((region, i) => {
+                const grad = gradientField[i];
+                const original = regions[i];
+
+                // Update position delta
+                region.deltaU.x += grad.x * lrPos;
+                region.deltaU.y += grad.y * lrPos;
+
+                // Clamp position delta to max allowed shift
+                const currentShift = Math.sqrt(region.deltaU.x ** 2 + region.deltaU.y ** 2);
+                if (currentShift > maxPositionShift) {
+                    const scale = maxPositionShift / currentShift;
+                    region.deltaU.x *= scale;
+                    region.deltaU.y *= scale;
+                }
+
+                // Apply position
+                region.cx = original.cx + region.deltaU.x;
+                region.cy = original.cy + region.deltaU.y;
+
+                // Clamp to canvas
+                region.cx = Math.max(20, Math.min(canvasSize - 20, region.cx));
+                region.cy = Math.max(20, Math.min(canvasSize - 20, region.cy));
+
+                // Update scale delta
+                region.deltaSigma += grad.sigma * lrScale;
+
+                // Clamp scale delta to max allowed change
+                region.deltaSigma = Math.max(-maxScaleChange, Math.min(maxScaleChange, region.deltaSigma));
+
+                // Apply scale with absolute limits
+                region.sigma = Math.max(8, Math.min(45, original.sigma + region.deltaSigma));
+
+                // Update dimensions proportionally
+                const scaleRatio = region.sigma / original.sigma;
+                region.width = original.width * scaleRatio;
+                region.height = original.height * scaleRatio;
+            });
+
+            optimizationStep++;
+            updateStats();
+        }
+
+        // Drawing functions
+        function drawInitialCanvas() {
+            const canvas = document.getElementById('initialCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            // Draw entropy background
+            drawEntropyBackground(ctx);
+            drawDiagram(ctx);
+
+            // Draw initial regions
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            regions.forEach((r, i) => {
+                ctx.strokeRect(r.cx - r.width/2, r.cy - r.height/2, r.width, r.height);
+
+                // Draw center point
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(r.cx, r.cy, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), r.cx, r.cy + 3);
+            });
+        }
+
+        function drawGradientCanvas() {
+            const canvas = document.getElementById('gradientCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            // Draw entropy background (faded)
+            drawEntropyBackground(ctx, 0.3);
+
+            // Draw task targets
+            const config = taskConfigs[currentTask];
+            config.targets.forEach(target => {
+                ctx.fillStyle = `rgba(255, 215, 0, ${target.strength * 0.3})`;
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw gradient vectors
+            refinedRegions.forEach((region, i) => {
+                const grad = gradientField[i];
+                if (!grad) return;
+
+                const cx = regions[i].cx;
+                const cy = regions[i].cy;
+
+                // Color based on magnitude
+                const mag = grad.magnitude;
+                const hue = 180 - Math.min(mag * 3, 180); // Green to red
+                ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.lineWidth = 2;
+
+                // Draw arrow
+                const scale = 3;
+                const endX = cx + grad.x * scale;
+                const endY = cy + grad.y * scale;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Arrow head
+                const angle = Math.atan2(grad.y, grad.x);
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - 8 * Math.cos(angle - 0.4), endY - 8 * Math.sin(angle - 0.4));
+                ctx.lineTo(endX - 8 * Math.cos(angle + 0.4), endY - 8 * Math.sin(angle + 0.4));
+                ctx.closePath();
+                ctx.fill();
+
+                // Scale change indicator
+                if (Math.abs(grad.sigma) > 0.5) {
+                    ctx.fillStyle = grad.sigma > 0 ? '#4ecdc4' : '#ff6b6b';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(grad.sigma > 0 ? '+σ' : '-σ', cx + 15, cy - 15);
+                }
+            });
+        }
+
+        function drawRefinedCanvas() {
+            const canvas = document.getElementById('refinedCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            drawEntropyBackground(ctx);
+            drawDiagram(ctx);
+
+            // Draw refined regions with subtle change visualization
+            refinedRegions.forEach((r, i) => {
+                const orig = regions[i];
+
+                // Draw ORIGINAL position as ghost (faded red)
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.strokeRect(orig.cx - orig.width/2, orig.cy - orig.height/2, orig.width, orig.height);
+                ctx.setLineDash([]);
+
+                // Draw REFINED region box (solid cyan)
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(r.cx - r.width/2, r.cy - r.height/2, r.width, r.height);
+
+                // Draw movement arrow (only if there's movement)
+                const dx = r.cx - orig.cx;
+                const dy = r.cy - orig.cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 2) {
+                    // Draw arrow from original to refined
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(orig.cx, orig.cy);
+                    ctx.lineTo(r.cx, r.cy);
+                    ctx.stroke();
+
+                    // Arrow head
+                    const angle = Math.atan2(dy, dx);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.moveTo(r.cx, r.cy);
+                    ctx.lineTo(r.cx - 6 * Math.cos(angle - 0.4), r.cy - 6 * Math.sin(angle - 0.4));
+                    ctx.lineTo(r.cx - 6 * Math.cos(angle + 0.4), r.cy - 6 * Math.sin(angle + 0.4));
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Draw original center (faded)
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
+                ctx.beginPath();
+                ctx.arc(orig.cx, orig.cy, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw refined center point
+                ctx.fillStyle = '#4ecdc4';
+                ctx.beginPath();
+                ctx.arc(r.cx, r.cy, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), r.cx, r.cy + 3);
+            });
+
+            // Draw task targets (faded)
+            const config = taskConfigs[currentTask];
+            ctx.globalAlpha = 0.2;
+            config.targets.forEach(target => {
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+        }
+
+        function drawEntropyBackground(ctx, alpha = 1) {
+            const imageData = ctx.createImageData(canvasSize, canvasSize);
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    const idx = (y * canvasSize + x) * 4;
+                    const e = entropyMap[y][x];
+                    const gray = 240 - e * 60 * alpha;
+                    imageData.data[idx] = gray;
+                    imageData.data[idx + 1] = gray;
+                    imageData.data[idx + 2] = gray;
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function drawDiagram(ctx) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // Circle
+            ctx.beginPath();
+            ctx.arc(200, 200, 120, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Lines
+            ctx.beginPath();
+            ctx.moveTo(80, 80);
+            ctx.lineTo(200, 200);
+            ctx.lineTo(320, 80);
+            ctx.moveTo(200, 80);
+            ctx.lineTo(200, 320);
+            ctx.moveTo(80, 320);
+            ctx.lineTo(320, 320);
+            ctx.stroke();
+
+            // Small circle
+            ctx.beginPath();
+            ctx.arc(200, 140, 15, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawComparisonCharts() {
+            drawScaleHistogram();
+            drawPositionShifts();
+        }
+
+        function drawScaleHistogram() {
+            const canvas = document.getElementById('scaleHistCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 500;
+            canvas.height = 200;
+
+            ctx.fillStyle = '#1e1e3e';
+            ctx.fillRect(0, 0, 500, 200);
+
+            const barWidth = 15;
+            const gap = 8;
+            const startX = 50;
+            const baseY = 170;
+
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(40, 20);
+            ctx.lineTo(40, baseY);
+            ctx.lineTo(480, baseY);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Token Index', 260, 195);
+            ctx.save();
+            ctx.translate(15, 100);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Scale (σ)', 0, 0);
+            ctx.restore();
+
+            // Draw bars
+            const maxSigma = 50;
+            regions.forEach((r, i) => {
+                const x = startX + i * (barWidth * 2 + gap);
+                const refined = refinedRegions[i];
+
+                // Original bar
+                const h1 = (r.sigma / maxSigma) * 140;
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(x, baseY - h1, barWidth, h1);
+
+                // Refined bar
+                const h2 = (refined.sigma / maxSigma) * 140;
+                ctx.fillStyle = '#4ecdc4';
+                ctx.fillRect(x + barWidth, baseY - h2, barWidth, h2);
+
+                // Token label
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Arial';
+                ctx.fillText(i.toString(), x + barWidth, baseY + 12);
+            });
+
+            // Legend
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(350, 25, 15, 15);
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('σ_base', 370, 37);
+
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillRect(420, 25, 15, 15);
+            ctx.fillText('σ_final', 440, 37);
+        }
+
+        function drawPositionShifts() {
+            const canvas = document.getElementById('positionShiftCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 500;
+            canvas.height = 200;
+
+            ctx.fillStyle = '#1e1e3e';
+            ctx.fillRect(0, 0, 500, 200);
+
+            // Mini map showing all position shifts
+            const scale = 0.4;
+            const offsetX = 50;
+            const offsetY = 10;
+
+            // Draw scaled entropy background
+            ctx.fillStyle = '#2a2a4a';
+            ctx.fillRect(offsetX, offsetY, canvasSize * scale, canvasSize * scale);
+
+            // Draw shifts
+            regions.forEach((r, i) => {
+                const refined = refinedRegions[i];
+                const x1 = offsetX + r.cx * scale;
+                const y1 = offsetY + r.cy * scale;
+                const x2 = offsetX + refined.cx * scale;
+                const y2 = offsetY + refined.cy * scale;
+
+                // Draw arrow
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Original point
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Refined point
+                ctx.fillStyle = '#4ecdc4';
+                ctx.beginPath();
+                ctx.arc(x2, y2, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Stats panel
+            const statsX = 280;
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+
+            let totalDist = 0;
+            let maxDist = 0;
+            refinedRegions.forEach((r, i) => {
+                const dx = r.cx - regions[i].cx;
+                const dy = r.cy - regions[i].cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                totalDist += dist;
+                maxDist = Math.max(maxDist, dist);
+            });
+
+            ctx.fillText(`Avg shift: ${(totalDist / regions.length).toFixed(1)} px`, statsX, 40);
+            ctx.fillText(`Max shift: ${maxDist.toFixed(1)} px`, statsX, 60);
+            ctx.fillText(`Task: ${taskConfigs[currentTask].name}`, statsX, 80);
+            ctx.fillText(`Step: ${optimizationStep}`, statsX, 100);
+
+            // Legend
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(statsX + 5, 135, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#888';
+            ctx.fillText('u_base', statsX + 15, 138);
+
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath();
+            ctx.arc(statsX + 5, 155, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#888';
+            ctx.fillText('u_final', statsX + 15, 158);
+
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(statsX, 175);
+            ctx.lineTo(statsX + 20, 175);
+            ctx.stroke();
+            ctx.fillText('Δu', statsX + 25, 178);
+        }
+
+        function updateStats() {
+            let totalDeltaU = 0;
+            let totalDeltaSigma = 0;
+            let initialCoverage = 0;
+            let finalCoverage = 0;
+
+            regions.forEach((r, i) => {
+                const refined = refinedRegions[i];
+                const dx = refined.cx - r.cx;
+                const dy = refined.cy - r.cy;
+                totalDeltaU += Math.sqrt(dx * dx + dy * dy);
+                totalDeltaSigma += Math.abs(refined.sigma - r.sigma);
+                initialCoverage += r.width * r.height;
+                finalCoverage += refined.width * refined.height;
+            });
+
+            document.getElementById('avgDeltaU').textContent = (totalDeltaU / regions.length).toFixed(1);
+            document.getElementById('avgDeltaSigma').textContent = (totalDeltaSigma / regions.length).toFixed(1);
+
+            const coverageChange = ((finalCoverage - initialCoverage) / initialCoverage * 100).toFixed(0);
+            document.getElementById('coverageChange').textContent = (coverageChange > 0 ? '+' : '') + coverageChange + '%';
+
+            // Compute task loss (distance to targets)
+            const config = taskConfigs[currentTask];
+            let loss = 0;
+            refinedRegions.forEach(r => {
+                let minDist = Infinity;
+                config.targets.forEach(t => {
+                    const dist = Math.sqrt((r.cx - t.x) ** 2 + (r.cy - t.y) ** 2);
+                    minDist = Math.min(minDist, dist / t.r);
+                });
+                loss += minDist;
+            });
+            loss /= refinedRegions.length;
+            document.getElementById('taskLoss').textContent = loss.toFixed(2);
+        }
+
+        // Sync tokens between top and bottom controls
+        function syncTokens(value) {
+            document.getElementById('numTokens').value = value;
+            document.getElementById('numTokensTop').value = value;
+            document.getElementById('numTokensValue').textContent = value;
+            document.getElementById('numTokensTopVal').textContent = value;
+            resetDemo();
+        }
+
+        // Control functions
+        function selectTask(task) {
+            currentTask = task;
+            document.querySelectorAll('.task-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            resetDemo();
+        }
+
+        function runOptimization() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const indicator = document.getElementById('animationIndicator');
+            const indicatorTop = document.getElementById('animIndicatorTop');
+            indicator.classList.remove('hidden');
+            indicatorTop.classList.remove('hidden');
+
+            let step = 0;
+            const maxSteps = 50;
+
+            function animate() {
+                if (step >= maxSteps) {
+                    isAnimating = false;
+                    indicator.classList.add('hidden');
+                    indicatorTop.classList.add('hidden');
+                    return;
+                }
+
+                computeGradients();
+                applyGradientStep();
+                drawAllCanvases();
+
+                document.getElementById('stepCount').textContent = step + 1;
+                step++;
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        function stepOptimization() {
+            computeGradients();
+            applyGradientStep();
+            drawAllCanvases();
+        }
+
+        function resetDemo() {
+            optimizationStep = 0;
+            isAnimating = false;
+            // Hide indicators
+            const indicator = document.getElementById('animationIndicator');
+            const indicatorTop = document.getElementById('animIndicatorTop');
+            if (indicator) indicator.classList.add('hidden');
+            if (indicatorTop) indicatorTop.classList.add('hidden');
+
+            const numTokens = parseInt(document.getElementById('numTokens').value);
+            // Sync top slider
+            document.getElementById('numTokensTop').value = numTokens;
+            document.getElementById('numTokensTopVal').textContent = numTokens;
+
+            adaptivePartition(numTokens);
+            computeGradients();
+            drawAllCanvases();
+            updateStats();
+        }
+
+        function drawAllCanvases() {
+            drawInitialCanvas();
+            drawGradientCanvas();
+            drawRefinedCanvas();
+            drawComparisonCharts();
+        }
+
+        // Event listeners
+        document.getElementById('numTokens').addEventListener('input', (e) => {
+            syncTokens(e.target.value);
+        });
+        document.getElementById('lrPosition').addEventListener('input', (e) => {
+            document.getElementById('lrPositionValue').textContent = e.target.value;
+        });
+        document.getElementById('lrScale').addEventListener('input', (e) => {
+            document.getElementById('lrScaleValue').textContent = e.target.value;
+        });
+        document.getElementById('gradientNoise').addEventListener('input', (e) => {
+            document.getElementById('gradientNoiseValue').textContent = e.target.value;
+        });
+
+        // Initialize
+        initEntropyMap();
+        resetDemo();
+    </script>
+</body>
+</html>
