@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entropy-Based Adaptive Partition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+        h2 {
+            color: #ffd700;
+            margin: 30px 0 15px 0;
+            font-size: 1.4em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* Main visualization area */
+        .vis-container {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .vis-panel {
+            flex: 1;
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .vis-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00d2ff;
+        }
+
+        /* Canvas for drawing */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        label {
+            min-width: 150px;
+            color: #aaa;
+        }
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #444;
+            cursor: pointer;
+        }
+        .value-display {
+            min-width: 60px;
+            text-align: right;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Algorithm steps */
+        .algorithm {
+            background: #1e1e3e;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        .step-num {
+            background: #3a7bd5;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #00d2ff;
+            margin-bottom: 5px;
+        }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #ffd700;
+        }
+
+        /* Comparison grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .comparison-item {
+            background: #2a2a4a;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .comparison-item canvas {
+            border-radius: 6px;
+        }
+        .comparison-label {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        /* Key insight */
+        .insight {
+            background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,210,255,0.1));
+            border-left: 4px solid #ffd700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .insight-title {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Tab styles for mode selection */
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .tab-btn {
+            padding: 12px 30px;
+            border: 2px solid #3a7bd5;
+            background: transparent;
+            color: #3a7bd5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border-color: transparent;
+        }
+        .tab-btn:hover:not(.active) {
+            background: rgba(58, 123, 213, 0.2);
+        }
+
+        /* Natural image section */
+        .natural-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #3a7bd5;
+        }
+        .image-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .image-option {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+            object-fit: cover;
+        }
+        .image-option:hover {
+            border-color: #00d2ff;
+            transform: scale(1.05);
+        }
+        .image-option.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        .upload-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            border: 3px dashed #666;
+            background: #2a2a4a;
+            color: #888;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 0.8em;
+        }
+        .upload-btn:hover {
+            border-color: #00d2ff;
+            color: #00d2ff;
+        }
+        .upload-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00d2ff;
+            font-size: 1.2em;
+            border-radius: 8px;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Entropy-Based Adaptive Partition</h1>
+        <p class="subtitle">Content-driven uneven patch splitting based on edge entropy</p>
+
+        <!-- Main visualization -->
+        <div class="vis-container">
+            <div class="vis-panel">
+                <div class="vis-title">Entropy Map (Edge Complexity)</div>
+                <div class="canvas-wrapper">
+                    <canvas id="entropyCanvas"></canvas>
+                </div>
+            </div>
+            <div class="vis-panel">
+                <div class="vis-title">Adaptive Partition (Uneven Patches)</div>
+                <div class="canvas-wrapper">
+                    <canvas id="partitionCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <label>Number of Tokens:</label>
+                <input type="range" id="numTokens" min="2" max="64" value="16">
+                <span class="value-display" id="numTokensValue">16</span>
+            </div>
+            <div class="control-row">
+                <label>Min Region Size:</label>
+                <input type="range" id="minSize" min="10" max="50" value="20">
+                <span class="value-display" id="minSizeValue">20</span>
+            </div>
+            <div class="control-row">
+                <label>Entropy Weight:</label>
+                <input type="range" id="entropyWeight" min="1" max="5" value="2" step="0.5">
+                <span class="value-display" id="entropyWeightValue">2.0</span>
+            </div>
+            <div class="control-row" style="justify-content: center; margin-top: 20px;">
+                <button onclick="runPartition()">Run Partition</button>
+                <button onclick="stepPartition()" style="margin-left: 15px; background: linear-gradient(135deg, #ff6b6b, #ffd700);">Step-by-Step</button>
+                <button onclick="resetDemo()" style="margin-left: 15px; background: #666;">Reset</button>
+            </div>
+        </div>
+
+        <!-- Algorithm explanation -->
+        <h2>Algorithm: Entropy-Driven Region Splitting</h2>
+        <div class="algorithm">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <div class="step-title">Compute Local Entropy</div>
+                    For each pixel, compute edge entropy using Sobel gradients:<br>
+                    <code>E(x,y) = -Σ p(g) log₂(p(g))</code> where g is edge magnitude histogram
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <div class="step-title">Initialize with Full Image</div>
+                    Start with one region covering the entire image:<br>
+                    <code>regions = [(image, entropy, bounds)]</code>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <div class="step-title">Find Highest Entropy Region</div>
+                    Sort regions by complexity: <code>regions.sort(key=entropy, reverse=True)</code><br>
+                    Pick the region with highest entropy that can still be split
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <div class="step-title">Split the Region</div>
+                    Split along the longer dimension (or by entropy if equal):<br>
+                    <code>if width > height: split_vertical() else: split_horizontal()</code>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                    <div class="step-title">Repeat Until N Tokens</div>
+                    Continue splitting until <code>len(regions) == num_tokens</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison at different token counts -->
+        <h2>Comparison: Different Token Counts</h2>
+        <div class="comparison-grid" id="comparisonGrid">
+            <!-- Filled by JavaScript -->
+        </div>
+
+        <!-- Key insight -->
+        <div class="insight">
+            <div class="insight-title">Key Insight: Content-Adaptive Tokenization</div>
+            <p>
+                <strong>High entropy regions</strong> (edges, textures, complex patterns) → <strong>More splits → Smaller patches</strong><br>
+                <strong>Low entropy regions</strong> (uniform backgrounds) → <strong>Fewer splits → Larger patches</strong><br><br>
+                This is the <strong>content-driven</strong> part. Later, <strong>task-driven gradients</strong> can refine these positions (Δu) and scales (Δσ).
+            </p>
+        </div>
+
+        <!-- Natural Image Demo Section -->
+        <div class="natural-section">
+            <h2>Natural Image Demo</h2>
+            <p class="subtitle">See how entropy-based partitioning works on real photographs</p>
+
+            <!-- Image selector -->
+            <div class="image-selector">
+                <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop"
+                     class="image-option selected"
+                     onclick="selectNaturalImage(this)"
+                     alt="Mountain landscape"
+                     crossorigin="anonymous"
+                     title="Mountain Landscape">
+                <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop"
+                     class="image-option"
+                     onclick="selectNaturalImage(this)"
+                     alt="Orange cat"
+                     crossorigin="anonymous"
+                     title="Orange Cat">
+                <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=400&fit=crop"
+                     class="image-option"
+                     onclick="selectNaturalImage(this)"
+                     alt="Golden retriever"
+                     crossorigin="anonymous"
+                     title="Golden Retriever">
+                <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=400&fit=crop"
+                     class="image-option"
+                     onclick="selectNaturalImage(this)"
+                     alt="Dog portrait"
+                     crossorigin="anonymous"
+                     title="Dog Portrait">
+                <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400&h=400&fit=crop"
+                     class="image-option"
+                     onclick="selectNaturalImage(this)"
+                     alt="City skyline"
+                     crossorigin="anonymous"
+                     title="City Skyline">
+                <label class="upload-btn">
+                    <span class="upload-icon">+</span>
+                    <span>Upload</span>
+                    <input type="file" accept="image/*" onchange="uploadImage(event)" style="display:none">
+                </label>
+            </div>
+
+            <!-- Natural image visualization -->
+            <div class="vis-container">
+                <div class="vis-panel">
+                    <div class="vis-title">Original Image</div>
+                    <div class="canvas-wrapper" style="position: relative;">
+                        <canvas id="naturalOriginalCanvas"></canvas>
+                        <div id="naturalLoading" class="loading-overlay hidden">Loading image...</div>
+                    </div>
+                </div>
+                <div class="vis-panel">
+                    <div class="vis-title">Entropy Map (Edge Complexity)</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="naturalEntropyCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="vis-panel">
+                    <div class="vis-title">Adaptive Partition</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="naturalPartitionCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Natural image controls -->
+            <div class="controls">
+                <div class="control-row">
+                    <label>Number of Tokens:</label>
+                    <input type="range" id="naturalNumTokens" min="2" max="64" value="16">
+                    <span class="value-display" id="naturalNumTokensValue">16</span>
+                </div>
+                <div class="control-row">
+                    <label>Min Region Size:</label>
+                    <input type="range" id="naturalMinSize" min="10" max="50" value="20">
+                    <span class="value-display" id="naturalMinSizeValue">20</span>
+                </div>
+                <div class="control-row" style="justify-content: center; margin-top: 20px;">
+                    <button onclick="runNaturalPartition()">Run Partition</button>
+                    <button onclick="stepNaturalPartition()" style="margin-left: 15px; background: linear-gradient(135deg, #ff6b6b, #ffd700);">Step-by-Step</button>
+                </div>
+            </div>
+
+            <!-- Natural image comparison -->
+            <h2>Natural Image: Token Count Comparison</h2>
+            <div class="comparison-grid" id="naturalComparisonGrid">
+                <!-- Filled by JavaScript -->
+            </div>
+
+            <!-- Natural image insight -->
+            <div class="insight">
+                <div class="insight-title">Observation: Natural Images Show Clear Entropy Patterns</div>
+                <p>
+                    <strong>Sky, water, smooth surfaces</strong> → Low entropy → Large patches (fewer tokens needed)<br>
+                    <strong>Foliage, textures, faces, edges</strong> → High entropy → Small patches (more detail preserved)<br><br>
+                    This demonstrates why <strong>content-adaptive tokenization</strong> is more efficient than uniform grids:
+                    we allocate more "attention" to complex regions that carry more information.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Synthetic diagram data - simulate a geometric diagram
+        const canvasSize = 400;
+        let entropyMap = [];
+        let regions = [];
+        let stepIndex = 0;
+
+        // Initialize entropy map (simulate diagram with lines and shapes)
+        function initEntropyMap() {
+            entropyMap = [];
+            for (let y = 0; y < canvasSize; y++) {
+                const row = [];
+                for (let x = 0; x < canvasSize; x++) {
+                    let entropy = 0.1; // Base background entropy
+
+                    // Circle (high entropy at edge)
+                    const cx = 200, cy = 200, r = 120;
+                    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                    if (Math.abs(dist - r) < 8) {
+                        entropy = 0.9;
+                    }
+
+                    // Diagonal line 1
+                    const d1 = Math.abs((y - 80) - (x - 80));
+                    if (d1 < 4 && x > 60 && x < 200 && y > 60 && y < 200) {
+                        entropy = 0.85;
+                    }
+
+                    // Diagonal line 2
+                    const d2 = Math.abs((y - 80) - (340 - x));
+                    if (d2 < 4 && x > 200 && x < 340 && y > 60 && y < 200) {
+                        entropy = 0.85;
+                    }
+
+                    // Horizontal line at bottom
+                    if (Math.abs(y - 320) < 3 && x > 80 && x < 320) {
+                        entropy = 0.8;
+                    }
+
+                    // Vertical line
+                    if (Math.abs(x - 200) < 3 && y > 80 && y < 320) {
+                        entropy = 0.75;
+                    }
+
+                    // Small circle (point)
+                    const cx2 = 200, cy2 = 140, r2 = 15;
+                    const dist2 = Math.sqrt((x - cx2) ** 2 + (y - cy2) ** 2);
+                    if (Math.abs(dist2 - r2) < 5) {
+                        entropy = 0.95;
+                    }
+
+                    // Add some noise
+                    entropy += (Math.random() - 0.5) * 0.1;
+                    entropy = Math.max(0, Math.min(1, entropy));
+
+                    row.push(entropy);
+                }
+                entropyMap.push(row);
+            }
+        }
+
+        // Draw entropy map
+        function drawEntropyMap() {
+            const canvas = document.getElementById('entropyCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            const imageData = ctx.createImageData(canvasSize, canvasSize);
+
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    const idx = (y * canvasSize + x) * 4;
+                    const e = entropyMap[y][x];
+
+                    // Hot colormap
+                    let r, g, b;
+                    if (e < 0.33) {
+                        r = e * 3 * 255;
+                        g = 0;
+                        b = 0;
+                    } else if (e < 0.66) {
+                        r = 255;
+                        g = (e - 0.33) * 3 * 255;
+                        b = 0;
+                    } else {
+                        r = 255;
+                        g = 255;
+                        b = (e - 0.66) * 3 * 255;
+                    }
+
+                    imageData.data[idx] = r;
+                    imageData.data[idx + 1] = g;
+                    imageData.data[idx + 2] = b;
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Calculate region entropy
+        function calculateRegionEntropy(x1, y1, x2, y2) {
+            let sum = 0;
+            let count = 0;
+            const weight = parseFloat(document.getElementById('entropyWeight').value);
+
+            for (let y = y1; y < y2; y++) {
+                for (let x = x1; x < x2; x++) {
+                    if (y < entropyMap.length && x < entropyMap[0].length) {
+                        sum += Math.pow(entropyMap[y][x], weight);
+                        count++;
+                    }
+                }
+            }
+
+            return count > 0 ? (sum / count) * Math.sqrt(count) : 0;
+        }
+
+        // Adaptive partition algorithm
+        function adaptivePartition(numTokens, animate = false) {
+            const minSize = parseInt(document.getElementById('minSize').value);
+
+            // Initialize with full image
+            regions = [{
+                x1: 0, y1: 0,
+                x2: canvasSize, y2: canvasSize,
+                entropy: calculateRegionEntropy(0, 0, canvasSize, canvasSize)
+            }];
+
+            while (regions.length < numTokens) {
+                // Sort by entropy (highest first)
+                regions.sort((a, b) => b.entropy - a.entropy);
+
+                // Find splittable region
+                let splitIdx = -1;
+                for (let i = 0; i < regions.length; i++) {
+                    const r = regions[i];
+                    const w = r.x2 - r.x1;
+                    const h = r.y2 - r.y1;
+                    if (w > minSize || h > minSize) {
+                        splitIdx = i;
+                        break;
+                    }
+                }
+
+                if (splitIdx === -1) break; // Can't split anymore
+
+                // Split the region
+                const r = regions[splitIdx];
+                regions.splice(splitIdx, 1);
+
+                const w = r.x2 - r.x1;
+                const h = r.y2 - r.y1;
+
+                if (w >= h && w > minSize) {
+                    // Vertical split
+                    const midX = Math.floor((r.x1 + r.x2) / 2);
+                    regions.push({
+                        x1: r.x1, y1: r.y1, x2: midX, y2: r.y2,
+                        entropy: calculateRegionEntropy(r.x1, r.y1, midX, r.y2)
+                    });
+                    regions.push({
+                        x1: midX, y1: r.y1, x2: r.x2, y2: r.y2,
+                        entropy: calculateRegionEntropy(midX, r.y1, r.x2, r.y2)
+                    });
+                } else if (h > minSize) {
+                    // Horizontal split
+                    const midY = Math.floor((r.y1 + r.y2) / 2);
+                    regions.push({
+                        x1: r.x1, y1: r.y1, x2: r.x2, y2: midY,
+                        entropy: calculateRegionEntropy(r.x1, r.y1, r.x2, midY)
+                    });
+                    regions.push({
+                        x1: r.x1, y1: midY, x2: r.x2, y2: r.y2,
+                        entropy: calculateRegionEntropy(r.x1, midY, r.x2, r.y2)
+                    });
+                }
+            }
+
+            return regions;
+        }
+
+        // Draw partition
+        function drawPartition(targetCanvas = 'partitionCanvas', regionsToDraw = null) {
+            const canvas = document.getElementById(targetCanvas);
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            const regs = regionsToDraw || regions;
+
+            // Draw background (entropy map faded)
+            const imageData = ctx.createImageData(canvasSize, canvasSize);
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    const idx = (y * canvasSize + x) * 4;
+                    const e = entropyMap[y][x];
+                    const gray = 240 - e * 60;
+                    imageData.data[idx] = gray;
+                    imageData.data[idx + 1] = gray;
+                    imageData.data[idx + 2] = gray;
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            // Draw diagram lines on top
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // Circle
+            ctx.beginPath();
+            ctx.arc(200, 200, 120, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Lines
+            ctx.beginPath();
+            ctx.moveTo(80, 80);
+            ctx.lineTo(200, 200);
+            ctx.lineTo(320, 80);
+            ctx.moveTo(200, 80);
+            ctx.lineTo(200, 320);
+            ctx.moveTo(80, 320);
+            ctx.lineTo(320, 320);
+            ctx.stroke();
+
+            // Small circle
+            ctx.beginPath();
+            ctx.arc(200, 140, 15, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw region boundaries
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+
+            regs.forEach((r, i) => {
+                ctx.strokeRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+
+                // Draw region number
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const cx = (r.x1 + r.x2) / 2;
+                const cy = (r.y1 + r.y2) / 2;
+                ctx.fillText(i.toString(), cx, cy);
+            });
+        }
+
+        // Run partition
+        function runPartition() {
+            const numTokens = parseInt(document.getElementById('numTokens').value);
+            adaptivePartition(numTokens);
+            drawPartition();
+            stepIndex = regions.length;
+        }
+
+        // Step-by-step partition
+        function stepPartition() {
+            stepIndex++;
+            if (stepIndex > 64) stepIndex = 1;
+
+            document.getElementById('numTokens').value = stepIndex;
+            document.getElementById('numTokensValue').textContent = stepIndex;
+
+            adaptivePartition(stepIndex);
+            drawPartition();
+        }
+
+        // Reset demo
+        function resetDemo() {
+            stepIndex = 0;
+            regions = [{
+                x1: 0, y1: 0,
+                x2: canvasSize, y2: canvasSize,
+                entropy: calculateRegionEntropy(0, 0, canvasSize, canvasSize)
+            }];
+            drawPartition();
+        }
+
+        // Create comparison grid
+        function createComparisonGrid() {
+            const grid = document.getElementById('comparisonGrid');
+            grid.innerHTML = '';
+
+            const tokenCounts = [4, 8, 16, 32];
+
+            tokenCounts.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'comparison-item';
+
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.className = 'canvas-wrapper';
+                canvasWrapper.style.height = '200px';
+
+                const canvas = document.createElement('canvas');
+                canvas.id = `compare_${n}`;
+                canvas.width = 200;
+                canvas.height = 200;
+
+                canvasWrapper.appendChild(canvas);
+                item.appendChild(canvasWrapper);
+
+                const label = document.createElement('div');
+                label.className = 'comparison-label';
+                label.textContent = `N = ${n} tokens`;
+                item.appendChild(label);
+
+                grid.appendChild(item);
+
+                // Run partition for this count
+                const savedRegions = [...regions];
+                adaptivePartition(n);
+
+                // Scale regions to smaller canvas
+                const scale = 200 / canvasSize;
+                const scaledRegions = regions.map(r => ({
+                    x1: r.x1 * scale,
+                    y1: r.y1 * scale,
+                    x2: r.x2 * scale,
+                    y2: r.y2 * scale,
+                    entropy: r.entropy
+                }));
+
+                // Draw on small canvas
+                drawSmallPartition(canvas, scaledRegions, scale);
+
+                regions = savedRegions;
+            });
+        }
+
+        function drawSmallPartition(canvas, regs, scale) {
+            const ctx = canvas.getContext('2d');
+            const size = 200;
+
+            // Background
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw simple diagram
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            ctx.arc(100, 100, 60 * scale * canvasSize / 200, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(40, 40);
+            ctx.lineTo(100, 100);
+            ctx.lineTo(160, 40);
+            ctx.moveTo(100, 40);
+            ctx.lineTo(100, 160);
+            ctx.moveTo(40, 160);
+            ctx.lineTo(160, 160);
+            ctx.stroke();
+
+            // Draw regions
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 1;
+
+            regs.forEach((r, i) => {
+                ctx.strokeRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+            });
+        }
+
+        // Update displays
+        document.getElementById('numTokens').addEventListener('input', (e) => {
+            document.getElementById('numTokensValue').textContent = e.target.value;
+        });
+        document.getElementById('minSize').addEventListener('input', (e) => {
+            document.getElementById('minSizeValue').textContent = e.target.value;
+        });
+        document.getElementById('entropyWeight').addEventListener('input', (e) => {
+            document.getElementById('entropyWeightValue').textContent = parseFloat(e.target.value).toFixed(1);
+        });
+
+        // Initialize
+        initEntropyMap();
+        drawEntropyMap();
+        runPartition();
+        createComparisonGrid();
+
+        // ==========================================
+        // NATURAL IMAGE DEMO
+        // ==========================================
+
+        let naturalEntropyMap = [];
+        let naturalRegions = [];
+        let naturalStepIndex = 0;
+        let currentNaturalImage = null;
+        let naturalImageData = null;
+
+        // Sobel kernels for edge detection
+        const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+        const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+
+        // Select a natural image from the gallery
+        function selectNaturalImage(imgElement) {
+            // Update selection UI
+            document.querySelectorAll('.image-option').forEach(img => img.classList.remove('selected'));
+            imgElement.classList.add('selected');
+
+            // Load the image
+            loadNaturalImage(imgElement.src);
+        }
+
+        // Upload custom image
+        function uploadImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Deselect preset images
+                    document.querySelectorAll('.image-option').forEach(img => img.classList.remove('selected'));
+                    loadNaturalImage(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Load and process a natural image
+        function loadNaturalImage(src) {
+            const loading = document.getElementById('naturalLoading');
+            loading.classList.remove('hidden');
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            img.onload = function() {
+                currentNaturalImage = img;
+                processNaturalImage(img);
+                loading.classList.add('hidden');
+            };
+
+            img.onerror = function() {
+                loading.textContent = 'Error loading image. Try uploading locally.';
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    loading.textContent = 'Loading image...';
+                }, 2000);
+            };
+
+            img.src = src;
+        }
+
+        // Process natural image: draw original, compute entropy, run partition
+        function processNaturalImage(img) {
+            // Draw original image
+            const origCanvas = document.getElementById('naturalOriginalCanvas');
+            const origCtx = origCanvas.getContext('2d');
+            origCanvas.width = canvasSize;
+            origCanvas.height = canvasSize;
+            origCtx.drawImage(img, 0, 0, canvasSize, canvasSize);
+
+            // Get image data for entropy computation
+            naturalImageData = origCtx.getImageData(0, 0, canvasSize, canvasSize);
+
+            // Compute entropy map from real image
+            computeNaturalEntropy();
+
+            // Draw entropy map
+            drawNaturalEntropyMap();
+
+            // Run partition
+            runNaturalPartition();
+
+            // Create comparison grid
+            createNaturalComparisonGrid();
+        }
+
+        // Compute entropy from image using Sobel edge detection
+        function computeNaturalEntropy() {
+            naturalEntropyMap = [];
+            const data = naturalImageData.data;
+            const width = canvasSize;
+            const height = canvasSize;
+
+            // Convert to grayscale first
+            const gray = [];
+            for (let y = 0; y < height; y++) {
+                const row = [];
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    // Luminance formula
+                    const g = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+                    row.push(g);
+                }
+                gray.push(row);
+            }
+
+            // Compute Sobel gradient magnitude
+            const gradMag = [];
+            for (let y = 0; y < height; y++) {
+                const row = [];
+                for (let x = 0; x < width; x++) {
+                    let gx = 0, gy = 0;
+
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const py = Math.min(Math.max(y + ky, 0), height - 1);
+                            const px = Math.min(Math.max(x + kx, 0), width - 1);
+                            gx += gray[py][px] * sobelX[ky + 1][kx + 1];
+                            gy += gray[py][px] * sobelY[ky + 1][kx + 1];
+                        }
+                    }
+
+                    row.push(Math.sqrt(gx * gx + gy * gy));
+                }
+                gradMag.push(row);
+            }
+
+            // Normalize gradient magnitude to [0, 1]
+            let maxGrad = 0;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    maxGrad = Math.max(maxGrad, gradMag[y][x]);
+                }
+            }
+
+            // Compute local entropy using sliding window
+            const windowSize = 8;
+            for (let y = 0; y < height; y++) {
+                const row = [];
+                for (let x = 0; x < width; x++) {
+                    let sum = 0;
+                    let count = 0;
+
+                    // Compute mean gradient in local window
+                    for (let wy = -windowSize; wy <= windowSize; wy++) {
+                        for (let wx = -windowSize; wx <= windowSize; wx++) {
+                            const py = y + wy;
+                            const px = x + wx;
+                            if (py >= 0 && py < height && px >= 0 && px < width) {
+                                sum += gradMag[py][px];
+                                count++;
+                            }
+                        }
+                    }
+
+                    // Normalize to [0, 1]
+                    let entropy = count > 0 ? (sum / count) / (maxGrad + 1e-6) : 0;
+
+                    // Apply non-linear scaling to enhance contrast
+                    entropy = Math.pow(entropy, 0.5);
+                    entropy = Math.min(1, entropy * 1.5);
+
+                    row.push(entropy);
+                }
+                naturalEntropyMap.push(row);
+            }
+        }
+
+        // Draw natural entropy map with hot colormap
+        function drawNaturalEntropyMap() {
+            const canvas = document.getElementById('naturalEntropyCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            const imageData = ctx.createImageData(canvasSize, canvasSize);
+
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    const idx = (y * canvasSize + x) * 4;
+                    const e = naturalEntropyMap[y] ? naturalEntropyMap[y][x] || 0 : 0;
+
+                    // Hot colormap (black -> red -> yellow -> white)
+                    let r, g, b;
+                    if (e < 0.33) {
+                        r = e * 3 * 255;
+                        g = 0;
+                        b = 0;
+                    } else if (e < 0.66) {
+                        r = 255;
+                        g = (e - 0.33) * 3 * 255;
+                        b = 0;
+                    } else {
+                        r = 255;
+                        g = 255;
+                        b = (e - 0.66) * 3 * 255;
+                    }
+
+                    imageData.data[idx] = r;
+                    imageData.data[idx + 1] = g;
+                    imageData.data[idx + 2] = b;
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Calculate region entropy for natural image
+        function calculateNaturalRegionEntropy(x1, y1, x2, y2) {
+            let sum = 0;
+            let count = 0;
+
+            for (let y = Math.floor(y1); y < Math.floor(y2); y++) {
+                for (let x = Math.floor(x1); x < Math.floor(x2); x++) {
+                    if (y < naturalEntropyMap.length && x < naturalEntropyMap[0].length) {
+                        sum += Math.pow(naturalEntropyMap[y][x], 2);
+                        count++;
+                    }
+                }
+            }
+
+            return count > 0 ? (sum / count) * Math.sqrt(count) : 0;
+        }
+
+        // Adaptive partition for natural image
+        function naturalAdaptivePartition(numTokens) {
+            const minSize = parseInt(document.getElementById('naturalMinSize').value);
+
+            naturalRegions = [{
+                x1: 0, y1: 0,
+                x2: canvasSize, y2: canvasSize,
+                entropy: calculateNaturalRegionEntropy(0, 0, canvasSize, canvasSize)
+            }];
+
+            while (naturalRegions.length < numTokens) {
+                naturalRegions.sort((a, b) => b.entropy - a.entropy);
+
+                let splitIdx = -1;
+                for (let i = 0; i < naturalRegions.length; i++) {
+                    const r = naturalRegions[i];
+                    const w = r.x2 - r.x1;
+                    const h = r.y2 - r.y1;
+                    if (w > minSize || h > minSize) {
+                        splitIdx = i;
+                        break;
+                    }
+                }
+
+                if (splitIdx === -1) break;
+
+                const r = naturalRegions[splitIdx];
+                naturalRegions.splice(splitIdx, 1);
+
+                const w = r.x2 - r.x1;
+                const h = r.y2 - r.y1;
+
+                if (w >= h && w > minSize) {
+                    const midX = Math.floor((r.x1 + r.x2) / 2);
+                    naturalRegions.push({
+                        x1: r.x1, y1: r.y1, x2: midX, y2: r.y2,
+                        entropy: calculateNaturalRegionEntropy(r.x1, r.y1, midX, r.y2)
+                    });
+                    naturalRegions.push({
+                        x1: midX, y1: r.y1, x2: r.x2, y2: r.y2,
+                        entropy: calculateNaturalRegionEntropy(midX, r.y1, r.x2, r.y2)
+                    });
+                } else if (h > minSize) {
+                    const midY = Math.floor((r.y1 + r.y2) / 2);
+                    naturalRegions.push({
+                        x1: r.x1, y1: r.y1, x2: r.x2, y2: midY,
+                        entropy: calculateNaturalRegionEntropy(r.x1, r.y1, r.x2, midY)
+                    });
+                    naturalRegions.push({
+                        x1: r.x1, y1: midY, x2: r.x2, y2: r.y2,
+                        entropy: calculateNaturalRegionEntropy(r.x1, midY, r.x2, r.y2)
+                    });
+                }
+            }
+
+            return naturalRegions;
+        }
+
+        // Draw natural partition
+        function drawNaturalPartition(targetCanvas = 'naturalPartitionCanvas', regionsToDraw = null) {
+            const canvas = document.getElementById(targetCanvas);
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+
+            const regs = regionsToDraw || naturalRegions;
+
+            // Draw the original image as background
+            if (currentNaturalImage) {
+                ctx.drawImage(currentNaturalImage, 0, 0, canvasSize, canvasSize);
+            }
+
+            // Draw semi-transparent overlay to see regions better
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            // Draw region boundaries
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+
+            regs.forEach((r, i) => {
+                ctx.strokeRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+
+                // Draw region number with background for visibility
+                const cx = (r.x1 + r.x2) / 2;
+                const cy = (r.y1 + r.y2) / 2;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#00ff00';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(i.toString(), cx, cy);
+            });
+        }
+
+        // Run natural partition
+        function runNaturalPartition() {
+            if (!currentNaturalImage) return;
+
+            const numTokens = parseInt(document.getElementById('naturalNumTokens').value);
+            naturalAdaptivePartition(numTokens);
+            drawNaturalPartition();
+            naturalStepIndex = naturalRegions.length;
+        }
+
+        // Step-by-step natural partition
+        function stepNaturalPartition() {
+            if (!currentNaturalImage) return;
+
+            naturalStepIndex++;
+            if (naturalStepIndex > 64) naturalStepIndex = 1;
+
+            document.getElementById('naturalNumTokens').value = naturalStepIndex;
+            document.getElementById('naturalNumTokensValue').textContent = naturalStepIndex;
+
+            naturalAdaptivePartition(naturalStepIndex);
+            drawNaturalPartition();
+        }
+
+        // Create natural comparison grid
+        function createNaturalComparisonGrid() {
+            if (!currentNaturalImage) return;
+
+            const grid = document.getElementById('naturalComparisonGrid');
+            grid.innerHTML = '';
+
+            const tokenCounts = [4, 8, 16, 32];
+
+            tokenCounts.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'comparison-item';
+
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.className = 'canvas-wrapper';
+                canvasWrapper.style.height = '200px';
+
+                const canvas = document.createElement('canvas');
+                canvas.id = `natural_compare_${n}`;
+                canvas.width = 200;
+                canvas.height = 200;
+
+                canvasWrapper.appendChild(canvas);
+                item.appendChild(canvasWrapper);
+
+                const label = document.createElement('div');
+                label.className = 'comparison-label';
+                label.textContent = `N = ${n} tokens`;
+                item.appendChild(label);
+
+                grid.appendChild(item);
+
+                // Run partition for this count
+                const savedRegions = [...naturalRegions];
+                naturalAdaptivePartition(n);
+
+                // Scale regions to smaller canvas
+                const scale = 200 / canvasSize;
+                const scaledRegions = naturalRegions.map(r => ({
+                    x1: r.x1 * scale,
+                    y1: r.y1 * scale,
+                    x2: r.x2 * scale,
+                    y2: r.y2 * scale,
+                    entropy: r.entropy
+                }));
+
+                // Draw on small canvas
+                drawSmallNaturalPartition(canvas, scaledRegions, scale);
+
+                naturalRegions = savedRegions;
+            });
+        }
+
+        function drawSmallNaturalPartition(canvas, regs, scale) {
+            const ctx = canvas.getContext('2d');
+            const size = 200;
+
+            // Draw scaled image
+            if (currentNaturalImage) {
+                ctx.drawImage(currentNaturalImage, 0, 0, size, size);
+            }
+
+            // Draw regions
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 1;
+
+            regs.forEach((r, i) => {
+                ctx.strokeRect(r.x1, r.y1, r.x2 - r.x1, r.y2 - r.y1);
+            });
+        }
+
+        // Update natural image controls
+        document.getElementById('naturalNumTokens').addEventListener('input', (e) => {
+            document.getElementById('naturalNumTokensValue').textContent = e.target.value;
+        });
+        document.getElementById('naturalMinSize').addEventListener('input', (e) => {
+            document.getElementById('naturalMinSizeValue').textContent = e.target.value;
+        });
+
+        // Load default natural image on page load
+        window.addEventListener('load', () => {
+            const defaultImg = document.querySelector('.image-option.selected');
+            if (defaultImg) {
+                loadNaturalImage(defaultImg.src);
+            }
+        });
+    </script>
+</body>
+</html>
