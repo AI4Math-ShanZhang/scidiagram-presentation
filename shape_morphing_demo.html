@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Morphing & RoPE Frequency Modulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #58a6ff, #f778ba);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        h2 {
+            color: #58a6ff;
+            margin: 30px 0 15px 0;
+            font-size: 1.3em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 30px;
+        }
+
+        /* Main grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .panel-title {
+            color: #58a6ff;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #0d1117;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .control-group {
+            margin: 15px 0;
+        }
+        .control-group label {
+            display: block;
+            color: #8b949e;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #30363d;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #58a6ff;
+            cursor: pointer;
+        }
+        .control-value {
+            text-align: right;
+            color: #f778ba;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 160, 67, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f778ba, #da3633);
+        }
+        .btn-tertiary {
+            background: #30363d;
+        }
+
+        /* Shape selector */
+        .shape-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .shape-btn {
+            padding: 8px 16px;
+            border: 2px solid #30363d;
+            background: transparent;
+            color: #8b949e;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+        .shape-btn.active {
+            border-color: #58a6ff;
+            color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+        }
+        .shape-btn:hover:not(.active) {
+            border-color: #8b949e;
+        }
+
+        /* Frequency visualization */
+        .freq-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .freq-item {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .freq-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+        .freq-label {
+            font-size: 0.75em;
+            color: #8b949e;
+            margin-top: 5px;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: rgba(88, 166, 255, 0.1);
+            border-left: 3px solid #58a6ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9em;
+        }
+        .info-box.highlight {
+            background: rgba(247, 120, 186, 0.1);
+            border-left-color: #f778ba;
+        }
+
+        /* Formula display */
+        .formula {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2em;
+            color: #f778ba;
+            text-align: center;
+            padding: 15px;
+            background: #0d1117;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        /* Gaussian visualization */
+        .gaussian-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .gaussian-item {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .gaussian-item canvas {
+            border-radius: 6px;
+        }
+        .gaussian-label {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #8b949e;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 15px 25px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+        .stat-label {
+            font-size: 0.8em;
+            color: #8b949e;
+            margin-top: 5px;
+        }
+
+        /* Animation indicator */
+        .anim-status {
+            text-align: center;
+            padding: 10px;
+            color: #f778ba;
+            font-size: 0.9em;
+        }
+        .anim-status.hidden {
+            display: none;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shape Morphing & RoPE Frequency Modulation</h1>
+        <p class="subtitle">How scale (σ) controls both region shape and position encoding frequency</p>
+
+        <!-- Top action bar - buttons visible with visualization -->
+        <div class="top-action-bar" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: #161b22; border: 1px solid #30363d; border-radius: 12px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="animateMorph()">Animate Morph</button>
+                <button class="btn-secondary" onclick="randomizeTargets()">Randomize Targets</button>
+                <button class="btn-tertiary" onclick="resetMorph()">Reset</button>
+            </div>
+            <div style="flex: 1;"></div>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="color: #8b949e; font-size: 0.85em; white-space: nowrap;">Tokens:</label>
+                    <input type="range" id="numTokensTop" min="3" max="16" value="6" style="width: 80px;">
+                    <span class="control-value" id="numTokensTopVal" style="min-width: 20px;">6</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="color: #8b949e; font-size: 0.85em; white-space: nowrap;">Progress:</label>
+                    <input type="range" id="morphProgressTop" min="0" max="100" value="0" style="width: 100px;">
+                    <span class="control-value" id="morphProgressTopVal" style="min-width: 30px;">0%</span>
+                </div>
+            </div>
+            <div id="animStatusTop" class="anim-status hidden" style="margin-left: 10px;">Animating...</div>
+        </div>
+
+        <!-- Main visualization grid -->
+        <div class="main-grid">
+            <!-- Left: Region morphing -->
+            <div class="panel">
+                <div class="panel-title">Region Shape Evolution</div>
+                <div class="canvas-container">
+                    <canvas id="morphCanvas" width="500" height="500"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: rgba(231, 76, 60, 0.5); border: 2px solid #e74c3c;"></div>
+                        <span>Initial</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: rgba(46, 160, 67, 0.5); border: 2px solid #2ea043;"></div>
+                        <span>Target</span>
+                    </div>
+                </div>
+                <div class="legend" style="margin-top: 5px;">
+                    <div class="legend-item">
+                        <span style="font-size: 16px;">⬆</span>
+                        <span style="color: #2ea043;">T0,T3... GROW (→low freq)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span style="font-size: 16px;">⬇</span>
+                        <span style="color: #f778ba;">T1,T4... SHRINK (→high freq)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span style="font-size: 16px;">●</span>
+                        <span style="color: #8b949e;">T2,T5... UNCHANGED</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Frequency response -->
+            <div class="panel">
+                <div class="panel-title">RoPE Frequency Response (per token)</div>
+                <div class="canvas-container">
+                    <canvas id="freqCanvas" width="500" height="500"></canvas>
+                </div>
+                <div class="info-box">
+                    <strong>θ<sub>i</sub>(σ) = 10000<sup>-2i/d</sup> / σ</strong><br>
+                    Large σ → Low frequency → Broad receptive field<br>
+                    Small σ → High frequency → Fine details
+                </div>
+            </div>
+        </div>
+
+        <!-- Shape morph types -->
+        <h2>Morphing Mode</h2>
+        <div class="shape-selector">
+            <button class="shape-btn active" onclick="setMorphMode('translate')">Translation (Δu)</button>
+            <button class="shape-btn" onclick="setMorphMode('scale')">Uniform Scale (Δσ)</button>
+            <button class="shape-btn" onclick="setMorphMode('anisotropic')">Anisotropic Scale</button>
+            <button class="shape-btn" onclick="setMorphMode('rotation')">Rotation (Δθ)</button>
+            <button class="shape-btn" onclick="setMorphMode('combined')">Combined</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div class="control-group">
+                    <label>Number of Tokens</label>
+                    <input type="range" id="numTokens" min="3" max="16" value="6">
+                    <div class="control-value" id="numTokensVal">6</div>
+                </div>
+                <div class="control-group">
+                    <label>Morph Progress (t)</label>
+                    <input type="range" id="morphProgress" min="0" max="100" value="0">
+                    <div class="control-value" id="morphProgressVal">0%</div>
+                </div>
+                <div class="control-group">
+                    <label>Scale Multiplier</label>
+                    <input type="range" id="scaleMult" min="0.2" max="3" value="1" step="0.1">
+                    <div class="control-value" id="scaleMultVal">1.0x</div>
+                </div>
+                <div class="control-group">
+                    <label>Aspect Ratio</label>
+                    <input type="range" id="aspectRatio" min="0.3" max="3" value="1" step="0.1">
+                    <div class="control-value" id="aspectRatioVal">1.0</div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button onclick="animateMorph()">Animate Morph</button>
+                <button class="btn-secondary" onclick="randomizeTargets()">Randomize Targets</button>
+                <button class="btn-tertiary" onclick="resetMorph()">Reset</button>
+            </div>
+        </div>
+
+        <div id="animStatus" class="anim-status hidden">Animating...</div>
+
+        <!-- Statistics -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-value" id="avgFreq">1.00</div>
+                <div class="stat-label">Avg Freq Ratio</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="freqRange">0.5-2.0</div>
+                <div class="stat-label">Freq Range</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="totalArea">100%</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="morphDist">0.0</div>
+                <div class="stat-label">Avg Morph Dist</div>
+            </div>
+        </div>
+
+        <!-- Gaussian primitive visualization -->
+        <h2>Individual Token Gaussians</h2>
+        <div class="gaussian-grid" id="gaussianGrid">
+            <!-- Filled by JS -->
+        </div>
+
+        <!-- Key insight -->
+        <div class="info-box highlight">
+            <strong>Key Insight: Shape ↔ Frequency Connection</strong><br><br>
+            Each token's shape (position u, scale σ, aspect ratio) directly determines its RoPE frequencies:
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li><strong>Wide regions</strong> (large σ<sub>x</sub>) → low x-frequency → captures horizontal patterns</li>
+                <li><strong>Tall regions</strong> (large σ<sub>y</sub>) → low y-frequency → captures vertical patterns</li>
+                <li><strong>Small regions</strong> (small σ) → high frequency → captures fine details</li>
+            </ul>
+            <br>
+            Task gradients learn to reshape tokens for optimal frequency coverage!
+        </div>
+
+        <!-- Scale-to-frequency relationship -->
+        <h2>Scale → Frequency Mapping</h2>
+        <div class="panel">
+            <div class="canvas-container">
+                <canvas id="scaleFreqCanvas" width="800" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Detailed formulas -->
+        <h2>Mathematical Framework</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+            <div class="panel">
+                <div class="panel-title">Position Encoding</div>
+                <div class="formula">
+                    angle<sup>j</sup><sub>x</sub> = u<sub>x</sub> · θ<sub>j</sub>(σ) = u<sub>x</sub> · 10000<sup>-2j/d</sup>/σ
+                </div>
+                <div class="info-box">
+                    Position u controls the <strong>phase</strong> of the rotation.<br>
+                    Scale σ controls the <strong>frequency</strong> of the rotation.
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">Attention Geometry</div>
+                <div class="formula">
+                    A<sub>ij</sub> ∝ exp(q<sub>i</sub><sup>T</sup> R<sub>σ</sub>(Δu) k<sub>j</sub>)
+                </div>
+                <div class="info-box">
+                    Attention depends on <strong>relative position</strong> Δu = u<sub>j</sub> - u<sub>i</sub><br>
+                    and <strong>relative scale</strong> σ<sub>ratio</sub> = σ<sub>j</sub>/σ<sub>i</sub>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasSize = 500;
+        let morphMode = 'translate';
+        let tokens = [];
+        let targetTokens = [];
+        let isAnimating = false;
+        let animationId = null;
+
+        // Initialize tokens from entropy-based partition
+        // Key: Create varied initial sizes to make morphing more visible
+        function initTokens() {
+            const n = parseInt(document.getElementById('numTokens').value);
+            tokens = [];
+            targetTokens = [];
+
+            // Create initial grid-like placement with entropy influence
+            const cols = Math.ceil(Math.sqrt(n));
+            const rows = Math.ceil(n / cols);
+            const cellW = canvasSize / cols;
+            const cellH = canvasSize / rows;
+
+            for (let i = 0; i < n; i++) {
+                const row = Math.floor(i / cols);
+                const col = i % cols;
+
+                const baseX = (col + 0.5) * cellW;
+                const baseY = (row + 0.5) * cellH;
+
+                // Assign initial sizes based on behavior pattern
+                // GROW tokens start SMALL, SHRINK tokens start LARGE
+                let sigmaBase;
+                if (i % 3 === 0) {
+                    // Will GROW: start small (20-30)
+                    sigmaBase = 20 + Math.random() * 10;
+                } else if (i % 3 === 1) {
+                    // Will SHRINK: start large (50-70)
+                    sigmaBase = 50 + Math.random() * 20;
+                } else {
+                    // UNCHANGED: medium size (35-45)
+                    sigmaBase = 35 + Math.random() * 10;
+                }
+
+                tokens.push({
+                    x: baseX + (Math.random() - 0.5) * 20,
+                    y: baseY + (Math.random() - 0.5) * 20,
+                    sigmaX: sigmaBase,
+                    sigmaY: sigmaBase,
+                    theta: 0,
+                    color: `hsl(${(i / n) * 360}, 70%, 50%)`
+                });
+
+                // Initialize targets as copies
+                targetTokens.push({ ...tokens[i] });
+            }
+
+            randomizeTargets();
+        }
+
+        // Simulated entropy function
+        function getEntropyAt(x, y) {
+            const cx = canvasSize / 2, cy = canvasSize / 2;
+            const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+            const r = canvasSize * 0.3;
+
+            // Higher entropy near center and edges of a virtual circle
+            if (Math.abs(dist - r) < 30) return 0.8;
+            if (dist < r * 0.5) return 0.6;
+            return 0.3 + Math.random() * 0.2;
+        }
+
+        // Randomize target positions based on morph mode
+        // Key: Make scale changes DRAMATIC and CLEAR
+        // - Some small → large (low freq → high freq)
+        // - Some large → small (high freq → low freq)
+        // - Some unchanged (reference)
+        function randomizeTargets() {
+            const scaleMult = parseFloat(document.getElementById('scaleMult').value);
+            const aspectRatio = parseFloat(document.getElementById('aspectRatio').value);
+            const n = tokens.length;
+
+            // Assign each token a behavior: 'grow', 'shrink', or 'unchanged'
+            const behaviors = [];
+            for (let i = 0; i < n; i++) {
+                if (i % 3 === 0) behaviors.push('grow');      // Small → Large
+                else if (i % 3 === 1) behaviors.push('shrink'); // Large → Small
+                else behaviors.push('unchanged');              // Stay same
+            }
+
+            tokens.forEach((t, i) => {
+                const target = targetTokens[i];
+                const behavior = behaviors[i];
+
+                switch (morphMode) {
+                    case 'translate':
+                        target.x = t.x + (Math.random() - 0.5) * 100;
+                        target.y = t.y + (Math.random() - 0.5) * 100;
+                        target.sigmaX = t.sigmaX;
+                        target.sigmaY = t.sigmaY;
+                        target.theta = t.theta;
+                        break;
+
+                    case 'scale':
+                        target.x = t.x;
+                        target.y = t.y;
+                        // DRAMATIC scale changes based on behavior
+                        if (behavior === 'grow') {
+                            // Small → Large (2x to 3x bigger)
+                            target.sigmaX = t.sigmaX * (2.0 + Math.random());
+                            target.sigmaY = t.sigmaY * (2.0 + Math.random());
+                        } else if (behavior === 'shrink') {
+                            // Large → Small (shrink to 30-50%)
+                            target.sigmaX = t.sigmaX * (0.3 + Math.random() * 0.2);
+                            target.sigmaY = t.sigmaY * (0.3 + Math.random() * 0.2);
+                        } else {
+                            // Unchanged (stay within 90-110%)
+                            target.sigmaX = t.sigmaX * (0.9 + Math.random() * 0.2);
+                            target.sigmaY = t.sigmaY * (0.9 + Math.random() * 0.2);
+                        }
+                        target.theta = t.theta;
+                        break;
+
+                    case 'anisotropic':
+                        target.x = t.x;
+                        target.y = t.y;
+                        // Dramatic anisotropic changes
+                        if (behavior === 'grow') {
+                            // Become wide (horizontal emphasis)
+                            target.sigmaX = t.sigmaX * 2.5;
+                            target.sigmaY = t.sigmaY * 0.6;
+                        } else if (behavior === 'shrink') {
+                            // Become tall (vertical emphasis)
+                            target.sigmaX = t.sigmaX * 0.5;
+                            target.sigmaY = t.sigmaY * 2.0;
+                        } else {
+                            // Stay roughly circular
+                            target.sigmaX = t.sigmaX;
+                            target.sigmaY = t.sigmaY;
+                        }
+                        target.theta = t.theta;
+                        break;
+
+                    case 'rotation':
+                        target.x = t.x;
+                        target.y = t.y;
+                        // Make elliptical to show rotation clearly
+                        target.sigmaX = t.sigmaX * 1.2;
+                        target.sigmaY = t.sigmaY * 0.5;
+                        target.theta = (i / n) * Math.PI - Math.PI/2; // Spread rotations
+                        break;
+
+                    case 'combined':
+                        target.x = t.x + (Math.random() - 0.5) * 60;
+                        target.y = t.y + (Math.random() - 0.5) * 60;
+                        // Combined with dramatic scale
+                        if (behavior === 'grow') {
+                            target.sigmaX = t.sigmaX * 2.5;
+                            target.sigmaY = t.sigmaY * 2.0;
+                        } else if (behavior === 'shrink') {
+                            target.sigmaX = t.sigmaX * 0.4;
+                            target.sigmaY = t.sigmaY * 0.4;
+                        } else {
+                            target.sigmaX = t.sigmaX;
+                            target.sigmaY = t.sigmaY;
+                        }
+                        target.theta = behavior === 'unchanged' ? t.theta : (Math.random() - 0.5) * Math.PI * 0.5;
+                        break;
+                }
+
+                // Clamp to canvas (allow larger range for dramatic effect)
+                target.x = Math.max(60, Math.min(canvasSize - 60, target.x));
+                target.y = Math.max(60, Math.min(canvasSize - 60, target.y));
+                target.sigmaX = Math.max(15, Math.min(120, target.sigmaX));
+                target.sigmaY = Math.max(15, Math.min(120, target.sigmaY));
+            });
+
+            draw();
+        }
+
+        // Get current interpolated state
+        function getCurrentState(progress) {
+            const t = progress / 100;
+            return tokens.map((token, i) => {
+                const target = targetTokens[i];
+                return {
+                    x: token.x + (target.x - token.x) * t,
+                    y: token.y + (target.y - token.y) * t,
+                    sigmaX: token.sigmaX + (target.sigmaX - token.sigmaX) * t,
+                    sigmaY: token.sigmaY + (target.sigmaY - token.sigmaY) * t,
+                    theta: token.theta + (target.theta - token.theta) * t,
+                    color: token.color
+                };
+            });
+        }
+
+        // Draw main morph canvas
+        function drawMorphCanvas() {
+            const canvas = document.getElementById('morphCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+            // Background grid
+            ctx.strokeStyle = '#21262d';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= canvasSize; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvasSize);
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvasSize, i);
+                ctx.stroke();
+            }
+
+            const progress = parseInt(document.getElementById('morphProgress').value);
+            const current = getCurrentState(progress);
+
+            // Draw initial regions (faded)
+            ctx.globalAlpha = 0.3;
+            tokens.forEach((t, i) => {
+                drawEllipse(ctx, t.x, t.y, t.sigmaX, t.sigmaY, t.theta, '#e74c3c', true);
+            });
+
+            // Draw target regions (faded)
+            ctx.globalAlpha = 0.3;
+            targetTokens.forEach((t, i) => {
+                drawEllipse(ctx, t.x, t.y, t.sigmaX, t.sigmaY, t.theta, '#2ea043', true);
+            });
+
+            // Draw current regions
+            ctx.globalAlpha = 0.7;
+            current.forEach((t, i) => {
+                drawEllipse(ctx, t.x, t.y, t.sigmaX, t.sigmaY, t.theta, t.color);
+            });
+
+            // Draw movement arrows
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = '#f778ba';
+            ctx.lineWidth = 2;
+            current.forEach((c, i) => {
+                const target = targetTokens[i];
+                if (progress < 100) {
+                    drawArrow(ctx, c.x, c.y, target.x, target.y);
+                }
+            });
+
+            // Draw center points with behavior icons
+            current.forEach((t, i) => {
+                // Determine behavior
+                let behaviorIcon, behaviorColor;
+                if (i % 3 === 0) {
+                    behaviorIcon = '⬆';
+                    behaviorColor = '#2ea043';
+                } else if (i % 3 === 1) {
+                    behaviorIcon = '⬇';
+                    behaviorColor = '#f778ba';
+                } else {
+                    behaviorIcon = '●';
+                    behaviorColor = '#8b949e';
+                }
+
+                // Center dot
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Token number
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 9px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), t.x, t.y + 3);
+
+                // Behavior icon above
+                ctx.fillStyle = behaviorColor;
+                ctx.font = '14px Arial';
+                ctx.fillText(behaviorIcon, t.x, t.y - 12);
+            });
+        }
+
+        function drawEllipse(ctx, cx, cy, rx, ry, theta, color, dashed = false) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(theta);
+
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color.replace(')', ', 0.2)').replace('hsl', 'hsla').replace('rgb', 'rgba');
+            ctx.lineWidth = 2;
+
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            }
+
+            ctx.beginPath();
+            ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 5) return;
+
+            const angle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arrow head
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - 10 * Math.cos(angle - 0.3), y2 - 10 * Math.sin(angle - 0.3));
+            ctx.lineTo(x2 - 10 * Math.cos(angle + 0.3), y2 - 10 * Math.sin(angle + 0.3));
+            ctx.closePath();
+            ctx.fillStyle = '#f778ba';
+            ctx.fill();
+        }
+
+        // Draw frequency response canvas
+        function drawFreqCanvas() {
+            const canvas = document.getElementById('freqCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+            const progress = parseInt(document.getElementById('morphProgress').value);
+            const current = getCurrentState(progress);
+
+            // Background
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            // Title
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Frequency Response: θ(σ) = θ_base / σ', canvasSize / 2, 25);
+
+            // Layout: show each token as a row with frequency "wave" visualization
+            const rowHeight = (canvasSize - 80) / Math.max(current.length, 1);
+            const waveWidth = canvasSize - 180; // More space for labels
+            const startX = 90;
+
+            current.forEach((t, i) => {
+                const y = 50 + i * rowHeight;
+                const sigma = (t.sigmaX + t.sigmaY) / 2;
+                const initialSigma = (tokens[i].sigmaX + tokens[i].sigmaY) / 2;
+
+                // Determine behavior
+                let behavior, behaviorColor, behaviorIcon;
+                if (i % 3 === 0) {
+                    behavior = 'GROW';
+                    behaviorColor = '#2ea043';
+                    behaviorIcon = '⬆';
+                } else if (i % 3 === 1) {
+                    behavior = 'SHRINK';
+                    behaviorColor = '#f778ba';
+                    behaviorIcon = '⬇';
+                } else {
+                    behavior = 'SAME';
+                    behaviorColor = '#8b949e';
+                    behaviorIcon = '●';
+                }
+
+                // Frequency is inversely proportional to sigma
+                // θ(σ) = θ_base / σ, so larger σ = lower frequency = longer wavelength
+                const frequency = 30 / sigma; // Normalized frequency (1.0 = baseline)
+                const wavelength = waveWidth / (frequency * 3); // Visual wavelength
+
+                // Token color indicator
+                ctx.fillStyle = t.color;
+                ctx.beginPath();
+                ctx.arc(20, y + rowHeight / 2 - 5, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Token label with behavior
+                ctx.fillStyle = behaviorColor;
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`T${i} ${behaviorIcon}`, 35, y + rowHeight / 2 - 2);
+
+                // Draw sine wave representing frequency
+                ctx.strokeStyle = t.color;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+
+                const amplitude = (rowHeight - 20) / 2;
+                const centerY = y + rowHeight / 2 - 5;
+
+                for (let x = 0; x <= waveWidth; x += 2) {
+                    const phase = (x / wavelength) * Math.PI * 2;
+                    const waveY = centerY + Math.sin(phase) * amplitude * 0.7;
+
+                    if (x === 0) {
+                        ctx.moveTo(startX + x, waveY);
+                    } else {
+                        ctx.lineTo(startX + x, waveY);
+                    }
+                }
+                ctx.stroke();
+
+                // Frequency value on the right - show change
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'right';
+
+                // Show sigma change
+                ctx.fillStyle = behaviorColor;
+                ctx.fillText(`σ: ${initialSigma.toFixed(0)}→${sigma.toFixed(0)}`, canvasSize - 8, y + rowHeight / 2 - 10);
+
+                // Show frequency with color based on high/low
+                ctx.fillStyle = frequency > 1.2 ? '#f778ba' : (frequency < 0.8 ? '#58a6ff' : '#c9d1d9');
+                ctx.fillText(`freq: ${frequency.toFixed(2)}x`, canvasSize - 8, y + rowHeight / 2 + 5);
+            });
+
+            // Legend at bottom
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+
+            // Small sigma = high freq indicator
+            ctx.fillStyle = '#f778ba';
+            ctx.fillText('⬇ SHRINK → High freq (fine detail)', canvasSize * 0.25, canvasSize - 10);
+
+            // Large sigma = low freq indicator
+            ctx.fillStyle = '#2ea043';
+            ctx.fillText('⬆ GROW → Low freq (global patterns)', canvasSize * 0.75, canvasSize - 10);
+        }
+
+        // Draw scale-to-frequency mapping
+        function drawScaleFreqMapping() {
+            const canvas = document.getElementById('scaleFreqCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, w, h);
+
+            // Axes
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(60, 30);
+            ctx.lineTo(60, h - 40);
+            ctx.lineTo(w - 30, h - 40);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Scale (σ)', w / 2, h - 10);
+            ctx.save();
+            ctx.translate(20, h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Frequency θ(σ)', 0, 0);
+            ctx.restore();
+
+            // Draw curve: θ(σ) = 1/σ
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            for (let x = 70; x < w - 30; x++) {
+                const sigma = 5 + (x - 70) / (w - 100) * 80;
+                const freq = 1 / sigma * 50;
+                const y = h - 40 - freq * (h - 70) / 1.5;
+
+                if (x === 70) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Mark current tokens
+            const progress = parseInt(document.getElementById('morphProgress').value);
+            const current = getCurrentState(progress);
+
+            current.forEach((t, i) => {
+                const sigma = (t.sigmaX + t.sigmaY) / 2;
+                const x = 70 + (sigma - 5) / 80 * (w - 100);
+                const freq = 1 / sigma * 50;
+                const y = h - 40 - freq * (h - 70) / 1.5;
+
+                ctx.fillStyle = t.color;
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), x, y + 4);
+            });
+
+            // Annotations
+            ctx.fillStyle = '#f778ba';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Small σ → High freq → Fine details', 100, 50);
+            ctx.fillText('Large σ → Low freq → Global patterns', w - 250, h - 70);
+        }
+
+        // Draw Gaussian grid
+        function drawGaussianGrid() {
+            const grid = document.getElementById('gaussianGrid');
+            grid.innerHTML = '';
+
+            const progress = parseInt(document.getElementById('morphProgress').value);
+            const current = getCurrentState(progress);
+
+            current.slice(0, 6).forEach((t, i) => {
+                const item = document.createElement('div');
+                item.className = 'gaussian-item';
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 150;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+
+                // Draw 2D Gaussian
+                const imageData = ctx.createImageData(150, 100);
+                const cx = 75, cy = 50;
+
+                for (let y = 0; y < 100; y++) {
+                    for (let x = 0; x < 150; x++) {
+                        // Apply rotation
+                        const dx = x - cx;
+                        const dy = y - cy;
+                        const rx = dx * Math.cos(-t.theta) - dy * Math.sin(-t.theta);
+                        const ry = dx * Math.sin(-t.theta) + dy * Math.cos(-t.theta);
+
+                        const normX = t.sigmaX / 30;
+                        const normY = t.sigmaY / 30;
+                        const val = Math.exp(-(rx * rx / (normX * normX * 500) + ry * ry / (normY * normY * 300)));
+
+                        const idx = (y * 150 + x) * 4;
+                        const color = hexToRgb(t.color);
+                        imageData.data[idx] = color.r * val;
+                        imageData.data[idx + 1] = color.g * val;
+                        imageData.data[idx + 2] = color.b * val;
+                        imageData.data[idx + 3] = 255;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+
+                item.appendChild(canvas);
+
+                const label = document.createElement('div');
+                label.className = 'gaussian-label';
+                label.innerHTML = `Token ${i}<br>σ<sub>x</sub>=${t.sigmaX.toFixed(0)}, σ<sub>y</sub>=${t.sigmaY.toFixed(0)}<br>θ=${(t.theta * 180 / Math.PI).toFixed(0)}°`;
+                item.appendChild(label);
+
+                grid.appendChild(item);
+            });
+        }
+
+        function hexToRgb(color) {
+            // Parse HSL color
+            const match = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+            if (match) {
+                const h = parseInt(match[1]) / 360;
+                const s = parseInt(match[2]) / 100;
+                const l = parseInt(match[3]) / 100;
+
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                return { r: r * 255, g: g * 255, b: b * 255 };
+            }
+            return { r: 100, g: 100, b: 255 };
+        }
+
+        // Update statistics
+        function updateStats() {
+            const progress = parseInt(document.getElementById('morphProgress').value);
+            const current = getCurrentState(progress);
+
+            // Average frequency ratio
+            let avgSigma = 0;
+            let minSigma = Infinity, maxSigma = 0;
+            let totalArea = 0;
+            let totalDist = 0;
+
+            current.forEach((t, i) => {
+                const sigma = (t.sigmaX + t.sigmaY) / 2;
+                avgSigma += sigma;
+                minSigma = Math.min(minSigma, sigma);
+                maxSigma = Math.max(maxSigma, sigma);
+                totalArea += t.sigmaX * t.sigmaY * Math.PI;
+
+                const orig = tokens[i];
+                const dx = t.x - orig.x;
+                const dy = t.y - orig.y;
+                totalDist += Math.sqrt(dx * dx + dy * dy);
+            });
+
+            avgSigma /= current.length;
+            const avgFreq = 30 / avgSigma; // Normalized
+
+            document.getElementById('avgFreq').textContent = avgFreq.toFixed(2);
+            document.getElementById('freqRange').textContent = `${(30/maxSigma).toFixed(1)}-${(30/minSigma).toFixed(1)}`;
+            document.getElementById('totalArea').textContent = `${(totalArea / (canvasSize * canvasSize) * 100).toFixed(0)}%`;
+            document.getElementById('morphDist').textContent = (totalDist / current.length).toFixed(1);
+        }
+
+        // Drawing wrapper
+        function draw() {
+            drawMorphCanvas();
+            drawFreqCanvas();
+            drawScaleFreqMapping();
+            drawGaussianGrid();
+            updateStats();
+        }
+
+        // Controls
+        function setMorphMode(mode) {
+            morphMode = mode;
+            document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            randomizeTargets();
+        }
+
+        function animateMorph() {
+            if (isAnimating) return;
+            isAnimating = true;
+            document.getElementById('animStatus').classList.remove('hidden');
+            document.getElementById('animStatusTop').classList.remove('hidden');
+
+            let progress = 0;
+
+            function animate() {
+                if (progress > 100) {
+                    isAnimating = false;
+                    document.getElementById('animStatus').classList.add('hidden');
+                    document.getElementById('animStatusTop').classList.add('hidden');
+                    return;
+                }
+
+                // Sync both sliders
+                document.getElementById('morphProgress').value = progress;
+                document.getElementById('morphProgressTop').value = progress;
+                document.getElementById('morphProgressVal').textContent = `${progress}%`;
+                document.getElementById('morphProgressTopVal').textContent = `${progress}%`;
+                draw();
+                progress += 2;
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        function resetMorph() {
+            if (animationId) cancelAnimationFrame(animationId);
+            isAnimating = false;
+            document.getElementById('animStatus').classList.add('hidden');
+            document.getElementById('animStatusTop').classList.add('hidden');
+            // Reset progress
+            document.getElementById('morphProgress').value = 0;
+            document.getElementById('morphProgressTop').value = 0;
+            document.getElementById('morphProgressVal').textContent = '0%';
+            document.getElementById('morphProgressTopVal').textContent = '0%';
+            initTokens();
+            draw();
+        }
+
+        // Helper function to sync token count
+        function syncNumTokens(value) {
+            document.getElementById('numTokens').value = value;
+            document.getElementById('numTokensTop').value = value;
+            document.getElementById('numTokensVal').textContent = value;
+            document.getElementById('numTokensTopVal').textContent = value;
+            initTokens();
+            draw();
+        }
+
+        // Helper function to sync morph progress
+        function syncMorphProgress(value) {
+            document.getElementById('morphProgress').value = value;
+            document.getElementById('morphProgressTop').value = value;
+            document.getElementById('morphProgressVal').textContent = `${value}%`;
+            document.getElementById('morphProgressTopVal').textContent = `${value}%`;
+            draw();
+        }
+
+        // Event listeners - bottom controls
+        document.getElementById('numTokens').addEventListener('input', (e) => {
+            syncNumTokens(e.target.value);
+        });
+
+        document.getElementById('morphProgress').addEventListener('input', (e) => {
+            syncMorphProgress(e.target.value);
+        });
+
+        document.getElementById('scaleMult').addEventListener('input', (e) => {
+            document.getElementById('scaleMultVal').textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+        });
+
+        document.getElementById('aspectRatio').addEventListener('input', (e) => {
+            document.getElementById('aspectRatioVal').textContent = parseFloat(e.target.value).toFixed(1);
+        });
+
+        // Event listeners - top controls
+        document.getElementById('numTokensTop').addEventListener('input', (e) => {
+            syncNumTokens(e.target.value);
+        });
+
+        document.getElementById('morphProgressTop').addEventListener('input', (e) => {
+            syncMorphProgress(e.target.value);
+        });
+
+        // Initialize
+        initTokens();
+        draw();
+    </script>
+</body>
+</html>
