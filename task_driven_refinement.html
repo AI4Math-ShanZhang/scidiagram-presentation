@@ -369,7 +369,7 @@
                 </div>
             </div>
             <div class="vis-panel">
-                <div class="vis-title">Gradient Field (∂L/∂u, ∂L/∂σ)</div>
+                <div class="vis-title">Task Attraction Field (where gradients pull tokens)</div>
                 <div class="canvas-wrapper">
                     <canvas id="gradientCanvas"></canvas>
                 </div>
@@ -862,23 +862,69 @@
             canvas.width = canvasSize;
             canvas.height = canvasSize;
 
-            // Draw entropy background (faded)
-            drawEntropyBackground(ctx, 0.3);
-
-            // Draw task targets
             const config = taskConfigs[currentTask];
-            config.targets.forEach(target => {
-                ctx.fillStyle = `rgba(255, 215, 0, ${target.strength * 0.3})`;
-                ctx.beginPath();
-                ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
-                ctx.fill();
 
-                ctx.strokeStyle = '#ffd700';
-                ctx.lineWidth = 2;
+            // Step 1: Draw attraction field as a heatmap
+            // Shows WHERE the task wants tokens to go (red = high attraction)
+            const fieldData = ctx.createImageData(canvasSize, canvasSize);
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    let attraction = 0;
+
+                    // Sum attraction from all targets
+                    config.targets.forEach(target => {
+                        const dx = x - target.x;
+                        const dy = y - target.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        // Gaussian attraction field around each target
+                        attraction += target.strength * Math.exp(-dist * dist / (2 * target.r * target.r));
+                    });
+
+                    // Clamp and map to color
+                    attraction = Math.min(attraction, 1);
+                    const idx = (y * canvasSize + x) * 4;
+
+                    // Blue (low) -> Yellow (medium) -> Red (high attraction)
+                    if (attraction < 0.5) {
+                        // Blue to Yellow
+                        const t = attraction * 2;
+                        fieldData.data[idx] = Math.floor(t * 255);      // R
+                        fieldData.data[idx + 1] = Math.floor(t * 200);  // G
+                        fieldData.data[idx + 2] = Math.floor((1-t) * 100 + 50); // B
+                    } else {
+                        // Yellow to Red
+                        const t = (attraction - 0.5) * 2;
+                        fieldData.data[idx] = 255;                       // R
+                        fieldData.data[idx + 1] = Math.floor((1-t) * 200); // G
+                        fieldData.data[idx + 2] = 50;                    // B
+                    }
+                    fieldData.data[idx + 3] = Math.floor(80 + attraction * 100); // Alpha
+                }
+            }
+            ctx.putImageData(fieldData, 0, 0);
+
+            // Step 2: Draw target centers with labels
+            config.targets.forEach((target, i) => {
+                // Target marker
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(target.x - 10, target.y);
+                ctx.lineTo(target.x + 10, target.y);
+                ctx.moveTo(target.x, target.y - 10);
+                ctx.lineTo(target.x, target.y + 10);
                 ctx.stroke();
+
+                // Target label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Target ${i+1}`, target.x, target.y - 15);
+                ctx.font = '10px Arial';
+                ctx.fillText(`(strength: ${target.strength.toFixed(1)})`, target.x, target.y + 25);
             });
 
-            // Draw gradient vectors
+            // Step 3: Draw tokens with arrows showing WHERE they will move
             refinedRegions.forEach((region, i) => {
                 const grad = gradientField[i];
                 if (!grad) return;
@@ -886,40 +932,83 @@
                 const cx = regions[i].cx;
                 const cy = regions[i].cy;
 
-                // Color based on magnitude
-                const mag = grad.magnitude;
-                const hue = 180 - Math.min(mag * 3, 180); // Green to red
-                ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
-                ctx.fillStyle = ctx.strokeStyle;
+                // Token position (current)
+                ctx.fillStyle = '#4ecdc4';
+                ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 2;
-
-                // Draw arrow
-                const scale = 3;
-                const endX = cx + grad.x * scale;
-                const endY = cy + grad.y * scale;
-
                 ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(endX, endY);
+                ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.stroke();
 
-                // Arrow head
-                const angle = Math.atan2(grad.y, grad.x);
-                ctx.beginPath();
-                ctx.moveTo(endX, endY);
-                ctx.lineTo(endX - 8 * Math.cos(angle - 0.4), endY - 8 * Math.sin(angle - 0.4));
-                ctx.lineTo(endX - 8 * Math.cos(angle + 0.4), endY - 8 * Math.sin(angle + 0.4));
-                ctx.closePath();
-                ctx.fill();
+                // Token number
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), cx, cy + 4);
 
-                // Scale change indicator
-                if (Math.abs(grad.sigma) > 0.5) {
-                    ctx.fillStyle = grad.sigma > 0 ? '#4ecdc4' : '#ff6b6b';
-                    ctx.font = 'bold 12px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(grad.sigma > 0 ? '+σ' : '-σ', cx + 15, cy - 15);
+                // Draw gradient arrow (direction token will move)
+                const arrowScale = 8; // Make arrows more visible
+                const endX = cx + grad.x * arrowScale;
+                const endY = cy + grad.y * arrowScale;
+                const arrowLength = Math.sqrt((endX-cx)**2 + (endY-cy)**2);
+
+                if (arrowLength > 3) {
+                    // Arrow line
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+
+                    // Arrow head
+                    const angle = Math.atan2(grad.y, grad.x);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 10 * Math.cos(angle - 0.4), endY - 10 * Math.sin(angle - 0.4));
+                    ctx.lineTo(endX - 10 * Math.cos(angle + 0.4), endY - 10 * Math.sin(angle + 0.4));
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Scale change indicator (more prominent)
+                if (Math.abs(grad.sigma) > 0.3) {
+                    const scaleLabel = grad.sigma > 0 ? '↑σ' : '↓σ';
+                    const scaleColor = grad.sigma > 0 ? '#4ecdc4' : '#ff6b6b';
+                    ctx.fillStyle = scaleColor;
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillText(scaleLabel, cx + 18, cy - 8);
                 }
             });
+
+            // Step 4: Legend
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(5, canvasSize - 70, 180, 65);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Attraction Field:', 10, canvasSize - 55);
+
+            // Color scale
+            const gradient = ctx.createLinearGradient(10, 0, 100, 0);
+            gradient.addColorStop(0, 'rgb(50, 50, 100)');
+            gradient.addColorStop(0.5, 'rgb(255, 200, 50)');
+            gradient.addColorStop(1, 'rgb(255, 50, 50)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(10, canvasSize - 45, 90, 12);
+
+            ctx.fillStyle = '#aaa';
+            ctx.font = '9px Arial';
+            ctx.fillText('Low', 10, canvasSize - 48);
+            ctx.fillText('High', 80, canvasSize - 48);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('→ = gradient direction', 10, canvasSize - 20);
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillText('● = token position', 10, canvasSize - 8);
         }
 
         function drawRefinedCanvas() {
