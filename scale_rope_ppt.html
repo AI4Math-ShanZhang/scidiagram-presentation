@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scale-Controlled RoPE: From Fixed Patches to Learnable Tokenization</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 40px 60px 80px 60px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 60px;
+            font-size: 14px;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.7), transparent);
+            z-index: 100;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 50%;
+            transform: translateY(50%);
+            z-index: 200;
+        }
+
+        .nav-buttons.left {
+            left: 20px;
+        }
+
+        .nav-buttons.right {
+            right: 20px;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.3);
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(139, 92, 246, 0.6);
+            transform: scale(1.1);
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .nav-dot.active {
+            background: #a855f7;
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            background: rgba(168, 85, 247, 0.5);
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            font-size: 24px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+            border-left: 5px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border-left: 5px solid #ef4444;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .demo-frame {
+            width: 100%;
+            height: 500px;
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            background: white;
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-down {
+            animation: fadeDown 0.6s ease-out forwards;
+        }
+
+        .animate-fade-left {
+            animation: fadeLeft 0.6s ease-out forwards;
+        }
+
+        .animate-fade-right {
+            animation: fadeRight 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons left">
+        <button class="nav-btn" onclick="prevSlide()">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    </div>
+    <div class="nav-buttons right">
+        <button class="nav-btn" onclick="nextSlide()">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="nav-dots"></div>
+
+    <!-- Footer -->
+    <footer class="slide-footer">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 1rem;">
+            <div class="text-slate-400">
+                <span class="text-slate-300 font-medium">Shan Zhang</span>
+                <span class="text-slate-500 ml-1">(AIML)</span>
+            </div>
+            <div class="text-slate-400 font-medium tracking-wide text-center">
+                Scale-Controlled RoPE: From Fixed Patches to Learnable Tokenization
+            </div>
+            <div class="flex items-center justify-end gap-4 text-slate-400">
+                <span class="text-slate-300 font-mono">
+                    <span id="current-page">1</span> / <span id="total-pages">10</span>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Slide 0: Cover -->
+    <section class="slide active" data-index="0">
+        <div class="text-center max-w-5xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-rotate text-purple-400" style="font-size: 80px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-400 mb-6" style="font-size: 52px;">
+                Scale-Controlled RoPE
+            </h1>
+            <p class="font-serif font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-indigo-400 to-purple-400 mb-8" style="font-size: 32px;">
+                From Fixed Patches to Learnable Tokenization
+            </p>
+            <div class="text-2xl text-slate-300 mb-8">
+                <span class="text-purple-400 font-semibold">Core Idea:</span> Token shape adapts via loss, not fixed patches
+            </div>
+            <div class="pt-6">
+                <p class="text-2xl text-slate-200 font-medium">Shan Zhang</p>
+                <p class="text-lg text-slate-500">Australian Institute for Machine Learning</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 1: The Problem - Boundary Dependency -->
+    <section class="slide" data-index="1">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-3xl font-bold font-serif italic text-purple-300">"The Boundary Dependency Problem"</h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 items-start">
+                <!-- Left: Problem -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-red-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-grid-2-plus text-red-400"></i>
+                            Standard ViT: Fixed 16×16 Patches
+                        </h3>
+                        <div class="space-y-2 text-base text-slate-300">
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i> <span class="text-white font-semibold">Translation sensitivity</span> - patch boundaries matter</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i> <span class="text-white font-semibold">Boundary-dependent features</span> - model learns edge artifacts</p>
+                            <p><i class="fa-solid fa-xmark text-red-400 mr-2"></i> <span class="text-white font-semibold">Uniform density</span> - same tokens for sky vs. objects</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Visual -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-4 rounded-2xl border border-slate-700">
+                        <div class="text-center mb-2">
+                            <span class="text-base text-slate-400">Fixed Grid Tokenization</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1 mb-2" style="max-width: 200px; margin: 0 auto;">
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">1</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">2</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">3</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">4</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">5</div>
+                            <div class="aspect-square bg-red-500/30 rounded border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-xs">6</div>
+                            <div class="aspect-square bg-red-500/30 rounded border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-xs">7</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">8</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">9</div>
+                            <div class="aspect-square bg-red-500/30 rounded border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-xs">10</div>
+                            <div class="aspect-square bg-red-500/30 rounded border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-xs">11</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">12</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">13</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">14</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">15</div>
+                            <div class="aspect-square bg-purple-500/20 rounded border border-purple-500/30 flex items-center justify-center text-slate-400 text-xs">16</div>
+                        </div>
+                        <p class="text-center text-red-400 font-semibold text-sm">Object split across 4 patches!</p>
+                        <p class="text-center text-slate-400 text-xs mt-1">Model must learn to reconstruct from boundaries</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="warning-box" style="padding: 12px;">
+                    <p class="text-base text-slate-200 text-center">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 mr-2"></i>
+                        <span class="text-red-400 font-bold">Key Issue:</span>
+                        Fixed patches force the model to learn features that depend on <span class="text-white font-semibold">relative positions of patch boundaries</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: Initial Idea - Phase-Sensitive Kernels -->
+    <section class="slide" data-index="2">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-3xl font-bold font-serif text-white"><span class="text-amber-400">Phase-Sensitive Kernels</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 items-start">
+                <!-- Left: The Idea -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-4 rounded-2xl border border-amber-500/30">
+                        <h3 class="text-xl font-bold text-amber-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-filter"></i>
+                            Instead of Fixed Patching...
+                        </h3>
+                        <div class="space-y-2 text-base text-slate-300">
+                            <div class="flex items-start gap-2">
+                                <span class="text-xl font-bold text-amber-500/50">1</span>
+                                <p>Design a set of <span class="text-amber-400 font-semibold">k phase-sensitive kernels</span></p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="text-xl font-bold text-amber-500/50">2</span>
+                                <p>Compute <span class="text-amber-400 font-semibold">similarity</span> between kernels and whole image</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="text-xl font-bold text-amber-500/50">3</span>
+                                <p>Select <span class="text-amber-400 font-semibold">peak regions</span> with highest response</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="text-xl font-bold text-amber-500/50">4</span>
+                                <p><span class="text-amber-400 font-semibold">Pool</span> each region to one token</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Filter Response -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                        <h3 class="text-base font-bold text-center text-slate-300 mb-2">Filter Response Visualization</h3>
+                        <div class="formula-box mb-3" style="padding: 10px;">
+                            <p class="text-center font-mono text-sm">
+                                r<sub>k</sub>(u,v) = ∫∫ f<sub>k</sub><sup>T</sup> R(Δu, Δv) Φ(I) dx dy
+                            </p>
+                        </div>
+                        <div class="relative mb-2" style="width: 180px; height: 140px; margin: 0 auto; background: #334155; border-radius: 8px;">
+                            <!-- Large region top-left -->
+                            <div class="absolute bg-gradient-to-br from-amber-500/40 to-amber-500/20 rounded-lg flex items-center justify-center" style="top: 5px; left: 5px; width: 70px; height: 55px;">
+                                <i class="fa-solid fa-star text-amber-400 text-xl"></i>
+                            </div>
+                            <!-- Small region top-right -->
+                            <div class="absolute bg-gradient-to-br from-amber-500/25 to-amber-500/10 rounded-lg flex items-center justify-center" style="top: 8px; right: 8px; width: 35px; height: 35px;">
+                                <i class="fa-solid fa-star text-amber-400/60 text-sm"></i>
+                            </div>
+                            <!-- Medium region middle-right -->
+                            <div class="absolute bg-gradient-to-br from-amber-500/30 to-amber-500/15 rounded-lg flex items-center justify-center" style="top: 50px; right: 25px; width: 50px; height: 45px;">
+                                <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+                            </div>
+                            <!-- Small region bottom-left -->
+                            <div class="absolute bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-lg flex items-center justify-center" style="bottom: 10px; left: 15px; width: 40px; height: 40px;">
+                                <i class="fa-solid fa-star text-amber-400/50 text-xs"></i>
+                            </div>
+                            <!-- Tiny region bottom-center -->
+                            <div class="absolute bg-gradient-to-br from-amber-500/35 to-amber-500/15 rounded-lg flex items-center justify-center" style="bottom: 8px; left: 70px; width: 28px; height: 28px;">
+                                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                            </div>
+                        </div>
+                        <p class="text-center text-slate-400 text-xs">Stars = peak filter responses → token locations</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="highlight-box" style="padding: 12px;">
+                    <p class="text-base text-slate-200 text-center">
+                        <i class="fa-solid fa-lightbulb text-amber-400 mr-2"></i>
+                        <span class="text-amber-400 font-bold">Cool Idea:</span>
+                        Tokens placed at <span class="text-white font-semibold">semantically important regions</span>, not arbitrary grid locations
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Limitation - Non-Differentiable -->
+    <section class="slide" data-index="3">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-3xl font-bold font-serif text-white">After implementation, <span class="text-red-400">limitations are:</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 items-center">
+                <!-- Left: The Problem -->
+                <div class="space-y-3 animate-fade-right">
+                    <div class="warning-box" style="padding: 12px;">
+                        <h3 class="text-base font-bold text-red-400 mb-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                            Problem: Non-Differentiable Selection
+                        </h3>
+                        <p class="text-slate-300 text-sm">
+                            The kernel selection process (argmax over filter responses) is <span class="text-red-400 font-bold">non-differentiable</span>.
+                        </p>
+                    </div>
+
+                    <div class="warning-box" style="padding: 12px;">
+                        <h3 class="text-base font-bold text-red-400 mb-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                            Consequence: Task-Agnostic
+                        </h3>
+                        <p class="text-slate-300 text-sm">
+                            We cannot guarantee that the kernel selection is <span class="text-red-400 font-bold">adapted by the task loss</span>.
+                        </p>
+                    </div>
+
+                    <div class="warning-box" style="padding: 12px;">
+                        <h3 class="text-base font-bold text-red-400 mb-1">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                            Result: No End-to-End Training
+                        </h3>
+                        <p class="text-slate-300 text-sm">
+                            Cannot integrate into <span class="text-red-400 font-bold">end-to-end training pipeline</span>. Tokenizer and task model are disconnected.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Visual -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-4 rounded-2xl border border-red-500/30">
+                        <h3 class="text-base font-bold text-center text-slate-300 mb-3">Gradient Flow Problem</h3>
+                        <div class="space-y-2">
+                            <div class="bg-slate-700/50 p-2 rounded-xl text-center">
+                                <p class="text-sm text-slate-300">Task Loss L<sub>task</sub></p>
+                            </div>
+                            <div class="text-center">
+                                <i class="fa-solid fa-arrow-down text-emerald-400 text-lg"></i>
+                                <span class="text-emerald-400 text-xs ml-2">✓ Gradients flow</span>
+                            </div>
+                            <div class="bg-slate-700/50 p-2 rounded-xl text-center">
+                                <p class="text-sm text-slate-300">Transformer</p>
+                            </div>
+                            <div class="text-center">
+                                <i class="fa-solid fa-arrow-down text-emerald-400 text-lg"></i>
+                                <span class="text-emerald-400 text-xs ml-2">✓ Gradients flow</span>
+                            </div>
+                            <div class="bg-slate-700/50 p-2 rounded-xl text-center">
+                                <p class="text-sm text-slate-300">Token Features</p>
+                            </div>
+                            <div class="text-center">
+                                <i class="fa-solid fa-xmark text-red-400 text-xl"></i>
+                                <span class="text-red-400 font-bold text-xs ml-2">✗ argmax blocks gradients!</span>
+                            </div>
+                            <div class="bg-red-500/20 p-2 rounded-xl text-center border-2 border-red-500/50">
+                                <p class="text-sm text-red-400 font-bold">Peak Selection (argmax)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Key Insight - Position-Insensitive Variable -->
+    <section class="slide" data-index="4">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Key Insight: <span class="text-emerald-400">Position-Insensitive Variables</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-10 items-start">
+                <!-- Left: Insight -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-emerald-500/10 to-green-500/10 p-6 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-2xl font-bold text-emerald-400 mb-5 flex items-center gap-3">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            The Insight
+                        </h3>
+                        <p class="text-lg text-slate-300 mb-5">
+                            We need to find a variable that is <span class="text-emerald-400 font-semibold">insensitive to small position changes</span>.
+                        </p>
+                        <div class="bg-slate-800/50 p-4 rounded-xl mb-4">
+                            <p class="text-lg text-slate-300">
+                                <span class="text-emerald-400 font-bold">Edge Magnitude / Entropy:</span><br>
+                                If we perturb the image slightly (e.g., by one pixel), the overall edge magnitude does not change much, and the <span class="text-white font-semibold">distribution remains stable</span>.
+                            </p>
+                        </div>
+                        <div class="space-y-2 text-slate-300">
+                            <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i> High entropy = edges, textures, details</p>
+                            <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i> Low entropy = uniform regions, backgrounds</p>
+                            <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i> Entropy is <span class="text-emerald-400">translation-robust</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Entropy -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-center text-slate-300 mb-4">Local Feature Entropy</h3>
+                        <div class="formula-box mb-4" style="padding: 15px;">
+                            <p class="text-center font-mono text-lg">
+                                E(x,y) = log(det(Σ<sub>local</sub>) + ε)
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30 text-center">
+                                <p class="text-emerald-400 font-bold mb-2">High Entropy</p>
+                                <p class="text-slate-400 text-sm">Edges, corners, textures</p>
+                                <p class="text-white font-semibold mt-2">→ More tokens, smaller σ</p>
+                            </div>
+                            <div class="bg-blue-500/10 p-4 rounded-xl border border-blue-500/30 text-center">
+                                <p class="text-blue-400 font-bold mb-2">Low Entropy</p>
+                                <p class="text-slate-400 text-sm">Uniform backgrounds</p>
+                                <p class="text-white font-semibold mt-2">→ Fewer tokens, larger σ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="insight-box" style="padding: 12px;">
+                    <p class="text-base text-slate-200 text-center">
+                        <i class="fa-solid fa-star text-emerald-400 mr-2"></i>
+                        <span class="text-emerald-400 font-bold">Key:</span>
+                        Use entropy to <span class="text-white font-semibold">initialize</span> token regions, then make them <span class="text-white font-semibold">learnable</span> through RoPE
+                        <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/entropy_adaptive_partition.html"
+                           target="_blank"
+                           class="ml-4 px-3 py-1 bg-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/50 transition inline-flex items-center">
+                            <i class="fa-solid fa-external-link mr-2"></i>Demo
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: The Bridge - RoPE and Differentiability -->
+    <section class="slide" data-index="5">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Making It <span class="text-purple-400">End-to-End Trainable</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-10 items-start">
+                <!-- Left: RoPE Insight -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 rounded-2xl border border-purple-500/30">
+                        <h3 class="text-2xl font-bold text-purple-400 mb-5 flex items-center gap-3">
+                            <i class="fa-solid fa-rotate"></i>
+                            RoPE: Phase and Frequency
+                        </h3>
+                        <p class="text-lg text-slate-300 mb-4">
+                            In transformer attention with RoPE, the angle (rotation) depends on:
+                        </p>
+                        <div class="space-y-4">
+                            <div class="bg-slate-800/50 p-4 rounded-xl">
+                                <p class="text-lg">
+                                    <span class="text-amber-400 font-bold">Position u</span> → controls <span class="text-amber-400">phase</span>
+                                </p>
+                                <p class="text-slate-400 text-sm mt-1">angle = u · θ<sub>i</sub></p>
+                            </div>
+                            <div class="bg-slate-800/50 p-4 rounded-xl">
+                                <p class="text-lg">
+                                    <span class="text-purple-400 font-bold">Frequency θ<sub>i</sub></span> → controls <span class="text-purple-400">attention range</span>
+                                </p>
+                                <p class="text-slate-400 text-sm mt-1">θ<sub>i</sub> = 10000<sup>-2i/d</sup></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: The Connection -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-center text-purple-400 mb-5">
+                            <i class="fa-solid fa-link mr-2"></i>
+                            The Key Connection
+                        </h3>
+                        <p class="text-lg text-slate-300 mb-4">
+                            If we can make <span class="text-purple-400 font-semibold">position (u)</span> and <span class="text-purple-400 font-semibold">frequency (via σ)</span> learnable parameters that affect:
+                        </p>
+                        <div class="space-y-3 text-slate-300">
+                            <p><i class="fa-solid fa-arrow-right text-purple-400 mr-2"></i> The <span class="text-white font-semibold">center point</span> of each token region</p>
+                            <p><i class="fa-solid fa-arrow-right text-purple-400 mr-2"></i> The <span class="text-white font-semibold">shape/scale</span> of that region</p>
+                        </div>
+                        <div class="mt-5 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
+                            <p class="text-center text-lg text-slate-200">
+                                Then during <span class="text-purple-400 font-bold">backpropagation</span>, these parameters can naturally influence how we tokenize the image!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-xl text-slate-200 text-center">
+                        <i class="fa-solid fa-wand-magic-sparkles text-emerald-400 mr-3"></i>
+                        <span class="text-emerald-400 font-bold">Solution:</span>
+                        Introduce <span class="text-white font-semibold">scale σ</span> to modulate RoPE frequencies: θ<sub>i</sub>(σ) = θ<sub>i</sub> / σ
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Core Innovation - Scale-Controlled RoPE -->
+    <section class="slide" data-index="6">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Core Innovation: <span class="text-purple-400">Scale Controls Frequency</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-12 items-start">
+                <!-- Left: Formula -->
+                <div class="space-y-6 animate-fade-right">
+                    <div class="formula-box">
+                        <p class="text-xl text-slate-300 mb-3">Standard RoPE:</p>
+                        <p class="text-2xl text-white font-mono mb-5">θ<sub>i</sub> = 10000<sup>-2i/d</sup></p>
+                        <p class="text-xl text-purple-400 mb-3 font-bold">Our Innovation:</p>
+                        <p class="text-3xl text-white font-mono">θ<sub>i</sub>(σ) = 10000<sup>-2i/d</sup> / <span class="text-purple-400 font-bold">σ</span></p>
+                    </div>
+                    <div class="highlight-box">
+                        <p class="text-lg text-slate-200">
+                            <span class="text-amber-400 font-bold">Key Insight:</span> Scale σ directly modulates the frequency spectrum
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Effect -->
+                <div class="space-y-5 animate-fade-left">
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-green-500/30">
+                        <div class="flex items-center gap-4 mb-3">
+                            <div class="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <span class="text-2xl font-bold text-green-400">σ↑</span>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-green-400">Large Scale</h4>
+                                <p class="text-lg text-slate-300">Low frequency → <span class="text-white font-semibold">Global patterns</span></p>
+                            </div>
+                        </div>
+                        <p class="text-slate-400">Broad receptive field, captures large structures</p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-blue-500/30">
+                        <div class="flex items-center gap-4 mb-3">
+                            <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <span class="text-2xl font-bold text-blue-400">σ↓</span>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-blue-400">Small Scale</h4>
+                                <p class="text-lg text-slate-300">High frequency → <span class="text-white font-semibold">Fine details</span></p>
+                            </div>
+                        </div>
+                        <p class="text-slate-400">Tight receptive field, captures edges, textures</p>
+                    </div>
+
+                    <div class="insight-box">
+                        <p class="text-lg text-slate-200">
+                            <i class="fa-solid fa-lightbulb text-green-400 mr-2"></i>
+                            <span class="text-green-400 font-bold">Result:</span> Shape = Semantic meaning encoded in frequency
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: Two-Stage Design -->
+    <section class="slide" data-index="7">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif">Two-Stage Optimization: <span class="text-purple-400">Content + Task</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Stage 1 -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6 rounded-2xl border border-amber-500/30 h-full">
+                        <div class="flex items-center gap-4 mb-5">
+                            <span class="text-5xl font-serif font-bold text-amber-500/50">01</span>
+                            <div>
+                                <h3 class="text-2xl font-bold text-amber-400">Entropy-Driven Init</h3>
+                                <p class="text-slate-400">Content-aware placement (Task-Agnostic)</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3 text-lg text-slate-300">
+                            <p><i class="fa-solid fa-check text-amber-400 mr-3"></i> Compute local feature entropy</p>
+                            <p><i class="fa-solid fa-check text-amber-400 mr-3"></i> Region growing from high entropy seeds</p>
+                            <p><i class="fa-solid fa-check text-amber-400 mr-3"></i> Extract (u<sub>base</sub>, σ<sub>base</sub>) per token</p>
+                        </div>
+                        <div class="mt-5 bg-slate-800/50 p-3 rounded-xl">
+                            <p class="text-slate-400 text-center">
+                                <span class="text-amber-400 font-bold">High entropy</span> → More tokens, smaller σ<br>
+                                <span class="text-amber-400 font-bold">Low entropy</span> → Fewer tokens, larger σ
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage 2 -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 rounded-2xl border border-purple-500/30 h-full">
+                        <div class="flex items-center gap-4 mb-5">
+                            <span class="text-5xl font-serif font-bold text-purple-500/50">02</span>
+                            <div>
+                                <h3 class="text-2xl font-bold text-purple-400">Loss-Driven Refinement</h3>
+                                <p class="text-slate-400">Task-specific adaptation (End-to-End)</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3 text-lg text-slate-300">
+                            <p><i class="fa-solid fa-check text-purple-400 mr-3"></i> Learn Δu, Δσ via backpropagation</p>
+                            <p><i class="fa-solid fa-check text-purple-400 mr-3"></i> Task loss flows to shape parameters</p>
+                            <p><i class="fa-solid fa-check text-purple-400 mr-3"></i> σ<sub>final</sub> = σ<sub>base</sub> + <span class="text-purple-400 font-bold">Δσ</span></p>
+                        </div>
+                        <div class="mt-5 formula-box" style="padding: 12px;">
+                            <p class="text-center font-mono">∂L/∂σ = Σ<sub>j</sub> (∂L/∂A<sub>ij</sub>) · q<sub>i</sub><sup>T</sup> (∂R<sub>σ</sub>/∂σ) k<sub>j</sub></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 animate-fade-up">
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <p class="text-xl text-slate-200">
+                        <span class="text-purple-400 font-bold">σ = σ<sub>base</sub> + Δσ</span> decomposes frequency into
+                        <span class="text-amber-400 font-semibold">content-driven</span> (init) +
+                        <span class="text-purple-400 font-semibold">task-driven</span> (learned)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 8: Demo - Task-Driven Refinement -->
+    <section class="slide" data-index="8">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-3xl font-bold font-serif text-white">Demo: <span class="text-purple-400">Task-Driven Region Refinement</span></h2>
+                <p class="text-slate-400 mt-2">See how task gradients refine token positions and scales</p>
+            </div>
+
+            <div class="animate-fade-up">
+                <iframe
+                    src="https://ai4math-shanzhang.github.io/scidiagram-presentation/task_driven_refinement.html"
+                    class="demo-frame"
+                    style="height: 550px;"
+                ></iframe>
+            </div>
+
+            <div class="mt-4 text-center flex justify-center gap-6">
+                <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/task_driven_refinement.html"
+                   target="_blank"
+                   class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition">
+                    <i class="fa-solid fa-external-link mr-2"></i>Task Refinement Demo
+                </a>
+                <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/shape_morphing_demo.html"
+                   target="_blank"
+                   class="px-4 py-2 bg-pink-500/20 text-pink-400 rounded-lg hover:bg-pink-500/30 transition">
+                    <i class="fa-solid fa-external-link mr-2"></i>Shape Morphing Demo
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Summary -->
+    <section class="slide" data-index="9">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Summary: <span class="text-purple-400">The Complete Story</span></h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-10 items-start">
+                <!-- Left: Story -->
+                <div class="space-y-4 animate-fade-right">
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-red-500/30">
+                        <h3 class="text-xl font-bold text-red-400 mb-2">
+                            <i class="fa-solid fa-1 mr-2 text-red-500/50"></i>
+                            Problem: Fixed Patches
+                        </h3>
+                        <p class="text-slate-300">
+                            ViT forces models to learn <span class="text-red-400">boundary-dependent features</span>
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-amber-500/30">
+                        <h3 class="text-xl font-bold text-amber-400 mb-2">
+                            <i class="fa-solid fa-2 mr-2 text-amber-500/50"></i>
+                            Phase-Sensitive Kernels
+                        </h3>
+                        <p class="text-slate-300">
+                            Cool but <span class="text-amber-400">non-differentiable</span> → task-agnostic
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-emerald-500/30">
+                        <h3 class="text-xl font-bold text-emerald-400 mb-2">
+                            <i class="fa-solid fa-3 mr-2 text-emerald-500/50"></i>
+                            Key Insight: Position-Insensitive Variable
+                        </h3>
+                        <p class="text-slate-300">
+                            Use <span class="text-emerald-400">entropy</span> for initialization (translation-robust)
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-purple-500/30">
+                        <h3 class="text-xl font-bold text-purple-400 mb-2">
+                            <i class="fa-solid fa-4 mr-2 text-purple-500/50"></i>
+                            Solution: Scale-Controlled RoPE
+                        </h3>
+                        <p class="text-slate-300">
+                            Make <span class="text-purple-400">σ learnable</span> → end-to-end task-driven tokenization
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Formula -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 rounded-2xl border border-purple-500/30">
+                        <h3 class="text-2xl font-bold text-center text-white mb-6">The Core Formula</h3>
+                        <div class="formula-box mb-5">
+                            <p class="text-2xl text-center font-mono">
+                                θ<sub>i</sub>(σ) = <span class="text-slate-400">10000<sup>-2i/d</sup></span> / <span class="text-purple-400 font-bold">σ</span>
+                            </p>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded bg-amber-500/20 flex items-center justify-center">
+                                    <span class="text-amber-400 font-bold">u</span>
+                                </div>
+                                <p class="text-slate-300">Position → controls <span class="text-amber-400">phase</span></p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded bg-purple-500/20 flex items-center justify-center">
+                                    <span class="text-purple-400 font-bold">σ</span>
+                                </div>
+                                <p class="text-slate-300">Scale → controls <span class="text-purple-400">frequency</span></p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded bg-pink-500/20 flex items-center justify-center">
+                                    <span class="text-pink-400 font-bold">Δσ</span>
+                                </div>
+                                <p class="text-slate-300">Learned → <span class="text-pink-400">task adaptation</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-5 p-3 bg-slate-800/50 rounded-xl">
+                            <p class="text-center text-slate-300">
+                                σ<sub>final</sub> = σ<sub>base</sub> + Δσ<br>
+                                <span class="text-amber-400">Content-driven</span> + <span class="text-purple-400">Task-driven</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Thank You -->
+    <section class="slide" data-index="10">
+        <div class="text-center max-w-4xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-rotate text-purple-400" style="font-size: 60px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight text-5xl text-white mb-6">
+                Thank You
+            </h1>
+            <p class="text-2xl text-slate-300 mb-8">
+                Questions & Discussion
+            </p>
+            <div class="inline-block bg-slate-800/50 p-6 rounded-2xl border border-purple-500/30 mb-6">
+                <p class="text-xl text-slate-300 mb-4">Interactive Demos:</p>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/entropy_adaptive_partition.html"
+                       target="_blank"
+                       class="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition">
+                        Entropy Partition
+                    </a>
+                    <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/task_driven_refinement.html"
+                       target="_blank"
+                       class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition">
+                        Task Refinement
+                    </a>
+                    <a href="https://ai4math-shanzhang.github.io/scidiagram-presentation/shape_morphing_demo.html"
+                       target="_blank"
+                       class="px-4 py-2 bg-pink-500/20 text-pink-400 rounded-lg hover:bg-pink-500/30 transition">
+                        Shape Morphing
+                    </a>
+                </div>
+            </div>
+            <div class="inline-block bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                <p class="text-xl text-slate-300 mb-4">Next Steps:</p>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <span class="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg">Implement baseline</span>
+                    <span class="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg">Run segmentation</span>
+                    <span class="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg">Visualize σ maps</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-pages').textContent = totalSlides;
+
+        // Create nav dots
+        const navDotsContainer = document.getElementById('nav-dots');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.onclick = function(e) {
+                e.stopPropagation();
+                goToSlide(i);
+            };
+            navDotsContainer.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+            document.getElementById('current-page').textContent = currentSlide + 1;
+
+            // Update nav dots
+            const dots = document.querySelectorAll('.nav-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>
