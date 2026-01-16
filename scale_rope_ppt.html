@@ -191,6 +191,45 @@
             from { opacity: 0; transform: translateX(-20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        .gallery-img {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .gallery-img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        #lightbox {
+            backdrop-filter: blur(5px);
+        }
+
+        #lightbox-img {
+            max-width: 90vw;
+            max-height: 85vh;
+            object-fit: contain;
+            cursor: zoom-in;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #lightbox-img.zoomed {
+            cursor: grab;
+            max-width: none;
+            max-height: none;
+        }
+
+        #lightbox-img.dragging {
+            cursor: grabbing;
+        }
+
+        #lightbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -476,8 +515,112 @@
         </div>
     </section>
 
-    <!-- Slide 4: Key Insight - Position-Insensitive Variable -->
+    <!-- Slide 4: Phase Filter Pipeline Demos -->
     <section class="slide" data-index="4">
+        <div class="max-w-7xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-3xl font-bold font-serif text-white">Phase Filter <span class="text-purple-400">Demos</span></h2>
+                <p class="text-slate-400 mt-2">Click any image to view full size (use scroll to zoom)</p>
+            </div>
+
+            <div class="grid grid-cols-4 gap-3 animate-fade-up" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Pipeline Steps -->
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-purple-500/30">
+                    <p class="text-xs text-purple-400 font-bold mb-1 text-center">Pipeline Step 1</p>
+                    <img src="./phase_filter_demos/pipeline_1.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline 1">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-purple-500/30">
+                    <p class="text-xs text-purple-400 font-bold mb-1 text-center">Pipeline Step 2</p>
+                    <img src="./phase_filter_demos/pipeline_2.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline 2">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-purple-500/30">
+                    <p class="text-xs text-purple-400 font-bold mb-1 text-center">Pipeline Step 3</p>
+                    <img src="./phase_filter_demos/pipeline_3.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline 3">
+                </div>
+
+                <!-- Final Construction Samples -->
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-amber-500/30">
+                    <p class="text-xs text-amber-400 font-bold mb-1 text-center">Final Sample 0</p>
+                    <img src="./phase_filter_demos/pipeline_final_construction_sample_0.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Final Construction Sample 0">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-amber-500/30">
+                    <p class="text-xs text-amber-400 font-bold mb-1 text-center">Final Sample 10000</p>
+                    <img src="./phase_filter_demos/pipeline_final_construction_sample_10000.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Final Construction Sample 10000">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-amber-500/30">
+                    <p class="text-xs text-amber-400 font-bold mb-1 text-center">Final Sample 11961</p>
+                    <img src="./phase_filter_demos/pipeline_final_construction_sample_11961.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Final Construction Sample 11961">
+                </div>
+
+                <!-- Pipeline Images -->
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 23</p>
+                    <img src="./phase_filter_demos/pipeline_image_23.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 23">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 26</p>
+                    <img src="./phase_filter_demos/pipeline_image_26.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 26">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 100</p>
+                    <img src="./phase_filter_demos/pipeline_image_100.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 100">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 232</p>
+                    <img src="./phase_filter_demos/pipeline_image_232.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 232">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 245</p>
+                    <img src="./phase_filter_demos/pipeline_image_245.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 245">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 253</p>
+                    <img src="./phase_filter_demos/pipeline_image_253.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 253">
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-xl border border-emerald-500/30">
+                    <p class="text-xs text-emerald-400 font-bold mb-1 text-center">Image 300</p>
+                    <img src="./phase_filter_demos/pipeline_image_300.png"
+                         class="w-full rounded cursor-pointer hover:opacity-80 transition gallery-img"
+                         onclick="openLightbox(this.src)" alt="Pipeline Image 300">
+                </div>
+            </div>
+
+            <div class="mt-3 text-center">
+                <div class="inline-flex gap-4 text-sm">
+                    <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded">Pipeline Steps</span>
+                    <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded">Final Constructions</span>
+                    <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded">Sample Images</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Key Insight - Position-Insensitive Variable -->
+    <section class="slide" data-index="5">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-6 text-center animate-fade-down">
                 <h2 class="text-4xl font-bold font-serif text-white">Key Insight: <span class="text-emerald-400">Position-Insensitive Variables</span></h2>
@@ -550,8 +693,8 @@
         </div>
     </section>
 
-    <!-- Slide 5: The Bridge - RoPE and Differentiability -->
-    <section class="slide" data-index="5">
+    <!-- Slide 6: The Bridge - RoPE and Differentiability -->
+    <section class="slide" data-index="6">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-6 text-center animate-fade-down">
                 <h2 class="text-4xl font-bold font-serif text-white">Making It <span class="text-purple-400">End-to-End Trainable</span></h2>
@@ -620,8 +763,8 @@
         </div>
     </section>
 
-    <!-- Slide 6: Core Innovation - Scale-Controlled RoPE -->
-    <section class="slide" data-index="6">
+    <!-- Slide 7: Core Innovation - Scale-Controlled RoPE -->
+    <section class="slide" data-index="7">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-6 text-center animate-fade-down">
                 <h2 class="text-4xl font-bold font-serif text-white">Core Innovation: <span class="text-purple-400">Scale Controls Frequency</span></h2>
@@ -682,8 +825,8 @@
         </div>
     </section>
 
-    <!-- Slide 7: Two-Stage Design -->
-    <section class="slide" data-index="7">
+    <!-- Slide 8: Two-Stage Design -->
+    <section class="slide" data-index="8">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-6 text-center animate-fade-down">
                 <h2 class="text-4xl font-bold font-serif">Two-Stage Optimization: <span class="text-purple-400">Content + Task</span></h2>
@@ -748,8 +891,8 @@
         </div>
     </section>
 
-    <!-- Slide 8: Demo - Task-Driven Refinement -->
-    <section class="slide" data-index="8">
+    <!-- Slide 9: Demo - Task-Driven Refinement -->
+    <section class="slide" data-index="9">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-4 text-center animate-fade-down">
                 <h2 class="text-3xl font-bold font-serif text-white">Demo: <span class="text-purple-400">Task-Driven Region Refinement</span></h2>
@@ -779,8 +922,8 @@
         </div>
     </section>
 
-    <!-- Slide 9: Summary -->
-    <section class="slide" data-index="9">
+    <!-- Slide 10: Summary -->
+    <section class="slide" data-index="10">
         <div class="max-w-6xl mx-auto w-full">
             <div class="mb-6 text-center animate-fade-down">
                 <h2 class="text-4xl font-bold font-serif text-white">Summary: <span class="text-purple-400">The Complete Story</span></h2>
@@ -871,8 +1014,19 @@
         </div>
     </section>
 
-    <!-- Slide 10: Thank You -->
-    <section class="slide" data-index="10">
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 bg-black/90 z-[1000] hidden" onclick="closeLightbox(event)">
+        <button onclick="closeLightbox(event)" class="absolute top-4 right-4 z-10 w-12 h-12 bg-red-500/80 hover:bg-red-500 rounded-full text-white text-2xl flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="w-full h-full flex items-center justify-center p-4" id="lightbox-container">
+            <img id="lightbox-img" src="" class="cursor-zoom-in" style="transform-origin: center center;">
+        </div>
+        <p class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">Left-click: zoom in • Right-click: zoom out • Scroll: zoom • Drag to move • ESC to close</p>
+    </div>
+
+    <!-- Slide 11: Thank You -->
+    <section class="slide" data-index="11">
         <div class="text-center max-w-4xl mx-auto">
             <div class="mb-8 animate-fade-down">
                 <i class="fa-solid fa-rotate text-purple-400" style="font-size: 60px;"></i>
@@ -993,6 +1147,133 @@
 
         // Initialize
         updateSlide();
+
+        // Lightbox functionality
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxContainer = document.getElementById('lightbox-container');
+
+        let zoomLevel = 1;
+        const zoomStep = 0.3;  // Small increment per click
+        const minZoom = 1;
+        const maxZoom = 5;
+        let isDragging = false;
+        let hasDragged = false;
+        let startX, startY, translateX = 0, translateY = 0;
+
+        function updateTransform() {
+            if (zoomLevel <= 1) {
+                lightboxImg.style.transform = '';
+                lightboxImg.classList.remove('zoomed');
+            } else {
+                lightboxImg.style.transform = `scale(${zoomLevel}) translate(${translateX/zoomLevel}px, ${translateY/zoomLevel}px)`;
+                lightboxImg.classList.add('zoomed');
+            }
+        }
+
+        function openLightbox(src) {
+            lightboxImg.src = src;
+            lightbox.style.display = 'flex';
+            zoomLevel = 1;
+            translateX = 0;
+            translateY = 0;
+            lightboxImg.classList.remove('zoomed', 'dragging');
+            lightboxImg.style.transform = '';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(event) {
+            // Close if clicking the background or close button
+            if (event.target === lightbox ||
+                event.target.closest('button') ||
+                (event.target.id === 'lightbox-container' && zoomLevel <= 1)) {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = '';
+                zoomLevel = 1;
+                translateX = 0;
+                translateY = 0;
+                lightboxImg.classList.remove('zoomed', 'dragging');
+                lightboxImg.style.transform = '';
+            }
+        }
+
+        // Left click to zoom in (small increments)
+        lightboxImg.addEventListener('click', function(e) {
+            if (hasDragged) {
+                hasDragged = false;
+                return;
+            }
+            // Zoom in by step
+            zoomLevel = Math.min(maxZoom, zoomLevel + zoomStep);
+            updateTransform();
+        });
+
+        // Right click to zoom out
+        lightboxImg.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            zoomLevel = Math.max(minZoom, zoomLevel - zoomStep);
+            if (zoomLevel <= 1) {
+                translateX = 0;
+                translateY = 0;
+            }
+            updateTransform();
+        });
+
+        // Scroll wheel to zoom
+        lightboxContainer.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                // Scroll up = zoom in
+                zoomLevel = Math.min(maxZoom, zoomLevel + zoomStep);
+            } else {
+                // Scroll down = zoom out
+                zoomLevel = Math.max(minZoom, zoomLevel - zoomStep);
+                if (zoomLevel <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+            }
+            updateTransform();
+        });
+
+        // Drag to pan when zoomed
+        lightboxImg.addEventListener('mousedown', function(e) {
+            if (zoomLevel <= 1) return;
+            isDragging = true;
+            hasDragged = false;
+            lightboxImg.classList.add('dragging');
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            hasDragged = true;
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateTransform();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                lightboxImg.classList.remove('dragging');
+                isDragging = false;
+            }
+        });
+
+        // Close lightbox with ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && lightbox.style.display === 'flex') {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = '';
+                zoomLevel = 1;
+                translateX = 0;
+                translateY = 0;
+                lightboxImg.classList.remove('zoomed', 'dragging');
+                lightboxImg.style.transform = '';
+            }
+        });
     </script>
 </body>
 </html>
