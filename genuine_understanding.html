@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genuine Understanding of Scientific Diagrams</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 40px 60px 80px 60px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 60px;
+            font-size: 14px;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.7), transparent);
+            z-index: 100;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 50%;
+            transform: translateY(50%);
+            z-index: 200;
+        }
+
+        .nav-buttons.left {
+            left: 20px;
+        }
+
+        .nav-buttons.right {
+            right: 20px;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(59, 130, 246, 0.6);
+            transform: scale(1.1);
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .nav-dot.active {
+            background: #3b82f6;
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(34, 197, 94, 0.1));
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            font-size: 24px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+            border-left: 5px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border-left: 5px solid #ef4444;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border-left: 5px solid #6366f1;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .definition-box {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1));
+            border: 3px solid rgba(6, 182, 212, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-down {
+            animation: fadeDown 0.6s ease-out forwards;
+        }
+
+        .animate-fade-left {
+            animation: fadeLeft 0.6s ease-out forwards;
+        }
+
+        .animate-fade-right {
+            animation: fadeRight 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .vs-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons left">
+        <button class="nav-btn" onclick="prevSlide()">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    </div>
+    <div class="nav-buttons right">
+        <button class="nav-btn" onclick="nextSlide()">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="nav-dots"></div>
+
+    <!-- Footer -->
+    <footer class="slide-footer">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 1rem;">
+            <div class="text-slate-400">
+                <span class="text-slate-300 font-medium">Shan Zhang</span>
+            </div>
+            <div class="text-slate-400 font-medium tracking-wide text-center">
+                Genuine Understanding of Scientific Diagrams
+            </div>
+            <div class="flex items-center justify-end gap-4 text-slate-400">
+                <span class="text-slate-300 font-mono">
+                    <span id="current-page">1</span> / <span id="total-pages">8</span>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Slide 0: Cover - High-level Contributions -->
+    <section class="slide active" data-index="0">
+        <div class="text-center max-w-5xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-diagram-project text-blue-400" style="font-size: 80px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-400 mb-6" style="font-size: 48px;">
+                Scientific Diagram Understanding Benchmark
+            </h1>
+            <p class="text-2xl text-slate-300 mb-8">
+                Evaluating <span class="text-cyan-400 font-semibold">Genuine Understanding</span> of Diagrams in MLLMs
+            </p>
+
+            <div class="grid grid-cols-2 gap-8 mt-10 text-left">
+                <!-- Breadth -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-6 rounded-2xl border border-blue-500/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-500/30 flex items-center justify-center">
+                                <i class="fa-solid fa-arrows-left-right text-blue-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-blue-400">Breadth</h3>
+                        </div>
+                        <p class="text-slate-300 mb-4">Covers a broad range of scientific subjects:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="category-badge bg-amber-500/20 text-amber-400">Chemistry</span>
+                            <span class="category-badge bg-red-500/20 text-red-400">Physics</span>
+                            <span class="category-badge bg-emerald-500/20 text-emerald-400">2D Geometry</span>
+                            <span class="category-badge bg-cyan-500/20 text-cyan-400">3D Solid Geometry</span>
+                            <span class="category-badge bg-purple-500/20 text-purple-400">Graphs</span>
+                            <span class="category-badge bg-blue-500/20 text-blue-400">Charts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Depth -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/10 p-6 rounded-2xl border border-purple-500/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-purple-500/30 flex items-center justify-center">
+                                <i class="fa-solid fa-arrows-down-to-line text-purple-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-purple-400">Depth</h3>
+                        </div>
+                        <p class="text-slate-300 mb-4">Focus on atomic-level abilities + Multi-scale evaluation metrics:</p>
+                        <div class="space-y-2 text-slate-300">
+                            <p><i class="fa-solid fa-check text-purple-400 mr-2"></i>Decompose into <span class="text-white font-semibold">progressive skills</span></p>
+                            <p><i class="fa-solid fa-check text-purple-400 mr-2"></i>Covering <span class="text-white font-semibold">token-level, primitive-level, global-level</span></p>
+                            <p><i class="fa-solid fa-check text-purple-400 mr-2"></i>Identify <span class="text-white font-semibold">failure reasons</span>, not just failures</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 1: What is Genuine Understanding? - Baby vs Expert -->
+    <section class="slide" data-index="1">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">What is <span class="text-cyan-400">"Genuine Understanding"</span>?</h2>
+                <p class="text-slate-400 mt-2">Precise perception + applying domain knowledge to symbolic understanding</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 items-center">
+                <!-- Left: Baby vs Expert -->
+                <div class="space-y-4 animate-fade-right">
+                    <!-- Baby -->
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-red-500/30">
+                        <div class="flex items-center gap-4 mb-3">
+                            <div class="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-baby text-red-400 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-red-400">Low-Level Perception</h3>
+                                <p class="text-slate-500 text-sm">Like a baby seeing a diagram</p>
+                            </div>
+                        </div>
+                        <p class="text-slate-300">
+                            Only perceives <span class="text-white font-semibold">visual primitives</span>:
+                        </p>
+                        <div class="flex gap-3 mt-3">
+                            <span class="px-3 py-1 bg-slate-700 rounded text-slate-400 text-sm">Points</span>
+                            <span class="px-3 py-1 bg-slate-700 rounded text-slate-400 text-sm">Lines</span>
+                            <span class="px-3 py-1 bg-slate-700 rounded text-slate-400 text-sm">Basic Shapes</span>
+                        </div>
+                    </div>
+
+                    <!-- Expert -->
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                        <div class="flex items-center gap-4 mb-3">
+                            <div class="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-user-graduate text-emerald-400 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-emerald-400">Expert Understanding</h3>
+                                <p class="text-slate-500 text-sm">Applying domain knowledge</p>
+                            </div>
+                        </div>
+                        <p class="text-slate-300">
+                            Interprets visual elements using <span class="text-white font-semibold">domain-specific knowledge</span>
+                        </p>
+                        <div class="flex gap-3 mt-3">
+                            <span class="px-3 py-1 bg-emerald-500/20 rounded text-emerald-400 text-sm">Symbols</span>
+                            <span class="px-3 py-1 bg-emerald-500/20 rounded text-emerald-400 text-sm">Relationships</span>
+                            <span class="px-3 py-1 bg-emerald-500/20 rounded text-emerald-400 text-sm">Meaning</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Triangle Drawing -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-6 rounded-2xl border border-emerald-500/30">
+                        <!-- SVG Triangle -->
+                        <div class="flex justify-center mb-6">
+                            <svg width="280" height="220" viewBox="0 0 280 220">
+                                <!-- Triangle -->
+                                <polygon points="140,30 40,190 240,190" fill="none" stroke="#10b981" stroke-width="3"/>
+
+                                <!-- Vertices -->
+                                <circle cx="140" cy="30" r="8" fill="#3b82f6"/>
+                                <circle cx="40" cy="190" r="8" fill="#3b82f6"/>
+                                <circle cx="240" cy="190" r="8" fill="#3b82f6"/>
+
+                                <!-- Labels -->
+                                <text x="140" y="18" text-anchor="middle" fill="#60a5fa" font-size="20" font-weight="bold">A</text>
+                                <text x="25" y="205" text-anchor="middle" fill="#60a5fa" font-size="20" font-weight="bold">B</text>
+                                <text x="255" y="205" text-anchor="middle" fill="#60a5fa" font-size="20" font-weight="bold">C</text>
+                            </svg>
+                        </div>
+
+                        <!-- Interpretations -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-red-500/10 p-3 rounded-xl border border-red-500/30">
+                                <p class="text-red-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-baby mr-1"></i> Baby sees:
+                                </p>
+                                <p class="text-slate-300 text-sm">"3 points and 3 lines"</p>
+                            </div>
+                            <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
+                                <p class="text-emerald-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-user-graduate mr-1"></i> Expert sees:
+                                </p>
+                                <p class="text-slate-300 text-sm">"Triangle with vertices A, B, C"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: Same Pattern, Different Meanings -->
+    <section class="slide" data-index="2">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-cyan-400">Same Pattern</span>, Different Meanings</h2>
+                <p class="text-slate-400 mt-2">The same visual elements can represent entirely different concepts across domains</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 items-start">
+                <!-- Geometry Example -->
+                <div class="animate-fade-right">
+                    <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 p-6 rounded-2xl border border-emerald-500/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                                <i class="fa-solid fa-draw-polygon text-emerald-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-emerald-400">Geometry</h3>
+                        </div>
+
+                        <!-- Line AB Drawing -->
+                        <div class="flex justify-center mb-4">
+                            <svg width="200" height="80" viewBox="0 0 200 80">
+                                <line x1="30" y1="40" x2="170" y2="40" stroke="#10b981" stroke-width="3"/>
+                                <circle cx="30" cy="40" r="6" fill="#3b82f6"/>
+                                <circle cx="170" cy="40" r="6" fill="#3b82f6"/>
+                                <text x="30" y="70" text-anchor="middle" fill="#60a5fa" font-size="16" font-weight="bold">A</text>
+                                <text x="170" y="70" text-anchor="middle" fill="#60a5fa" font-size="16" font-weight="bold">B</text>
+                            </svg>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="bg-slate-800/50 p-3 rounded-lg">
+                                <p class="text-red-400 text-sm mb-1"><i class="fa-solid fa-baby mr-2"></i>Baby sees:</p>
+                                <p class="text-slate-300">"2 points and a line"</p>
+                            </div>
+                            <div class="bg-slate-800/50 p-3 rounded-lg">
+                                <p class="text-emerald-400 text-sm mb-1"><i class="fa-solid fa-user-graduate mr-2"></i>Expert sees:</p>
+                                <p class="text-white font-semibold">"Line segment AB"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chemistry Example -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-amber-500/20 to-amber-500/5 p-6 rounded-2xl border border-amber-500/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-amber-500/30 flex items-center justify-center">
+                                <i class="fa-solid fa-atom text-amber-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-amber-400">Chemistry</h3>
+                        </div>
+
+                        <!-- Bond Drawing -->
+                        <div class="flex justify-center mb-4">
+                            <svg width="200" height="80" viewBox="0 0 200 80">
+                                <line x1="30" y1="40" x2="170" y2="40" stroke="#f59e0b" stroke-width="3"/>
+                                <circle cx="30" cy="40" r="6" fill="#ef4444"/>
+                                <circle cx="170" cy="40" r="6" fill="#3b82f6"/>
+                                <text x="30" y="70" text-anchor="middle" fill="#ef4444" font-size="16" font-weight="bold">A</text>
+                                <text x="170" y="70" text-anchor="middle" fill="#3b82f6" font-size="16" font-weight="bold">B</text>
+                            </svg>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="bg-slate-800/50 p-3 rounded-lg">
+                                <p class="text-red-400 text-sm mb-1"><i class="fa-solid fa-baby mr-2"></i>Baby sees:</p>
+                                <p class="text-slate-300">"2 points and a line"</p>
+                            </div>
+                            <div class="bg-slate-800/50 p-3 rounded-lg">
+                                <p class="text-amber-400 text-sm mb-1"><i class="fa-solid fa-user-graduate mr-2"></i>Expert sees:</p>
+                                <p class="text-white font-semibold">"Atoms connected by single bond"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 animate-fade-up">
+                <div class="warning-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 mr-2"></i>
+                        <span class="text-red-400 font-bold">Key Insight:</span>
+                        Perception alone is <span class="text-white font-semibold">not enough</span>. True understanding requires combining visual perception with disciplinary knowledge.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Our Definition -->
+    <section class="slide" data-index="3">
+        <div class="max-w-5xl mx-auto w-full">
+            <div class="mb-8 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white">Our <span class="text-cyan-400">Definition</span></h2>
+                <p class="text-slate-400 mt-2">A formal framework for genuine diagram understanding</p>
+            </div>
+
+            <div class="animate-fade-up">
+                <!-- Main Formula -->
+                <div class="definition-box text-center mb-8">
+                    <p class="text-3xl font-bold">
+                        <span class="text-blue-400">Visual Perception</span>
+                        <span class="text-slate-500 mx-4">+</span>
+                        <span class="text-purple-400">Domain Knowledge</span>
+                        <span class="text-slate-500 mx-4">=</span>
+                        <span class="text-cyan-400">Genuine Understanding</span>
+                    </p>
+                </div>
+
+                <!-- Two Components -->
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-blue-500/30">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-eye text-blue-400 text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-blue-400">Visual Perception</h3>
+                        </div>
+                        <p class="text-slate-300 text-lg">
+                            The <span class="text-white font-semibold">foundation</span> - recognizing visual primitives, structures, and spatial relationships
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-blue-500/20 rounded-full text-blue-400 text-sm">Shapes</span>
+                            <span class="px-3 py-1 bg-blue-500/20 rounded-full text-blue-400 text-sm">Lines</span>
+                            <span class="px-3 py-1 bg-blue-500/20 rounded-full text-blue-400 text-sm">Colors</span>
+                            <span class="px-3 py-1 bg-blue-500/20 rounded-full text-blue-400 text-sm">Layout</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-purple-500/30">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-brain text-purple-400 text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-purple-400">Domain Knowledge</h3>
+                        </div>
+                        <p class="text-slate-300 text-lg">
+                            What gives the diagram <span class="text-white font-semibold">meaning</span> - interpreting symbols within disciplinary context
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-purple-500/20 rounded-full text-purple-400 text-sm">Symbols</span>
+                            <span class="px-3 py-1 bg-purple-500/20 rounded-full text-purple-400 text-sm">Conventions</span>
+                            <span class="px-3 py-1 bg-purple-500/20 rounded-full text-purple-400 text-sm">Principles</span>
+                            <span class="px-3 py-1 bg-purple-500/20 rounded-full text-purple-400 text-sm">Relationships</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Implication -->
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-arrow-right text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Implication:</span>
+                        This motivates our <span class="text-white font-semibold">progressive, modular evaluation design</span>, rather than a single holistic test
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Progressive Task Design Overview -->
+    <section class="slide" data-index="4">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-purple-400">Progressive</span> Task Design</h2>
+            </div>
+
+            <!-- Formula -->
+            <div class="definition-box text-center mb-5 animate-fade-up">
+                <p class="text-2xl font-bold">
+                    <span class="text-blue-400">Visual Perception</span>
+                    <span class="text-slate-500 mx-3">+</span>
+                    <span class="text-purple-400">Domain Knowledge</span>
+                    <span class="text-slate-500 mx-3">=</span>
+                    <span class="text-cyan-400">Diagram Understanding</span>
+                </p>
+            </div>
+
+            <!-- Tree Structure with SVG -->
+            <div class="animate-fade-up">
+                <div class="flex justify-center">
+                    <svg width="950" height="340" viewBox="0 0 950 340">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+                            </marker>
+                        </defs>
+
+                        <!-- LEFT SIDE: Visual Perception Tree -->
+                        <!-- Visual Perception Box -->
+                        <rect x="60" y="10" width="180" height="40" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+                        <text x="150" y="36" text-anchor="middle" fill="#60a5fa" font-size="15" font-weight="bold">Visual Perception</text>
+
+                        <!-- Tree lines from Visual Perception -->
+                        <line x1="150" y1="50" x2="150" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="150" y1="70" x2="70" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="150" y1="70" x2="235" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="70" y1="70" x2="70" y2="90" stroke="#64748b" stroke-width="2"/>
+                        <line x1="235" y1="70" x2="235" y2="90" stroke="#64748b" stroke-width="2"/>
+
+                        <!-- Diagram-to-Code Box -->
+                        <rect x="5" y="90" width="130" height="45" rx="6" fill="#1e3a5f" stroke="#06b6d4" stroke-width="2"/>
+                        <text x="70" y="110" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="bold">Diagram-to-Code</text>
+                        <text x="70" y="125" text-anchor="middle" fill="#94a3b8" font-size="10">(D2C)</text>
+
+                        <!-- Diagram Editing Box -->
+                        <rect x="185" y="90" width="100" height="45" rx="6" fill="#1e3a5f" stroke="#10b981" stroke-width="2"/>
+                        <text x="235" y="110" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">Diagram Editing</text>
+                        <text x="235" y="125" text-anchor="middle" fill="#34d399" font-size="10">(DE)</text>
+
+                        <!-- Tree lines from D2C -->
+                        <line x1="70" y1="135" x2="70" y2="155" stroke="#64748b" stroke-width="2"/>
+                        <line x1="70" y1="155" x2="35" y2="155" stroke="#64748b" stroke-width="2"/>
+                        <line x1="70" y1="155" x2="120" y2="155" stroke="#64748b" stroke-width="2"/>
+                        <line x1="35" y1="155" x2="35" y2="175" stroke="#64748b" stroke-width="2"/>
+                        <line x1="120" y1="155" x2="120" y2="175" stroke="#64748b" stroke-width="2"/>
+
+                        <!-- Syntax Knowledge Box -->
+                        <rect x="0" y="175" width="70" height="60" rx="6" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+                        <text x="35" y="200" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="bold">Syntax</text>
+                        <text x="35" y="216" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="bold">Knowledge</text>
+
+
+                        <!-- Primitive Recognition Box -->
+                        <rect x="85" y="175" width="70" height="60" rx="6" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+                        <text x="120" y="200" text-anchor="middle" fill="#f472b6" font-size="11" font-weight="bold">Primitive</text>
+                        <text x="120" y="216" text-anchor="middle" fill="#f472b6" font-size="11" font-weight="bold">Recognition</text>
+
+                        <!-- Tree line from DE to child -->
+                        <line x1="235" y1="135" x2="235" y2="175" stroke="#64748b" stroke-width="2"/>
+
+                        <!-- Modifying Primitives and Structures Box (child of DE) -->
+                        <rect x="185" y="175" width="100" height="60" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                        <text x="235" y="195" text-anchor="middle" fill="#34d399" font-size="10" font-weight="bold">Modifying</text>
+                        <text x="235" y="210" text-anchor="middle" fill="#34d399" font-size="10" font-weight="bold">Primitives &</text>
+                        <text x="235" y="225" text-anchor="middle" fill="#34d399" font-size="10" font-weight="bold">Structures</text>
+
+
+                        <!-- PLUS sign -->
+                        <text x="260" y="35" text-anchor="middle" fill="#64748b" font-size="32" font-weight="bold">+</text>
+
+                        <!-- Domain Knowledge Box (no children) -->
+                        <rect x="300" y="10" width="180" height="40" rx="8" fill="#1e3a5f" stroke="#a855f7" stroke-width="2"/>
+                        <text x="390" y="36" text-anchor="middle" fill="#c084fc" font-size="15" font-weight="bold">Domain Knowledge</text>
+
+                        <!-- EQUALS sign -->
+                        <text x="520" y="35" text-anchor="middle" fill="#64748b" font-size="32" font-weight="bold">=</text>
+
+                        <!-- Diagram Understanding Box -->
+                        <rect x="560" y="10" width="200" height="40" rx="8" fill="#0f4c5c" stroke="#22d3ee" stroke-width="3"/>
+                        <text x="660" y="36" text-anchor="middle" fill="#22d3ee" font-size="16" font-weight="bold">Diagram Understanding</text>
+
+                        <!-- Tree lines from Diagram Understanding -->
+                        <line x1="660" y1="50" x2="660" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="660" y1="70" x2="590" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="660" y1="70" x2="660" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="660" y1="70" x2="730" y2="70" stroke="#64748b" stroke-width="2"/>
+                        <line x1="590" y1="70" x2="590" y2="90" stroke="#64748b" stroke-width="2"/>
+                        <line x1="660" y1="70" x2="660" y2="90" stroke="#64748b" stroke-width="2"/>
+                        <line x1="730" y1="70" x2="730" y2="90" stroke="#64748b" stroke-width="2"/>
+
+                        <!-- LaTeX Packages Box -->
+                        <rect x="550" y="90" width="80" height="70" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="590" y="112" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">LaTeX</text>
+                        <text x="590" y="127" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">Packages</text>
+                        <text x="590" y="145" text-anchor="middle" fill="#94a3b8" font-size="9">(chemfig,</text>
+                        <text x="590" y="156" text-anchor="middle" fill="#94a3b8" font-size="9">euclide)</text>
+
+                        <!-- Caption Box -->
+                        <rect x="635" y="90" width="70" height="50" rx="6" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                        <text x="670" y="120" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="bold">Caption</text>
+
+                        <!-- QA Box -->
+                        <rect x="710" y="90" width="95" height="70" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                        <text x="757" y="110" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">QA</text>
+                        <text x="757" y="127" text-anchor="middle" fill="#94a3b8" font-size="9">(symbol meaning,</text>
+                        <text x="757" y="140" text-anchor="middle" fill="#94a3b8" font-size="9">spatial</text>
+                        <text x="757" y="153" text-anchor="middle" fill="#94a3b8" font-size="9">relationship)</text>
+
+                        <!-- Bottom Flow Arrow -->
+                        <text x="475" y="275" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="bold">Progressive Flow:</text>
+
+                        <!-- Flow boxes at bottom (centered) -->
+                        <rect x="230" y="290" width="90" height="40" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+                        <text x="275" y="305" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="bold">Syntax</text>
+                        <text x="275" y="320" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="bold">Knowledge</text>
+
+                        <line x1="320" y1="310" x2="350" y2="310" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <rect x="360" y="290" width="90" height="40" rx="4" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+                        <text x="405" y="305" text-anchor="middle" fill="#f472b6" font-size="10" font-weight="bold">Primitive</text>
+                        <text x="405" y="320" text-anchor="middle" fill="#f472b6" font-size="10" font-weight="bold">Recognition</text>
+
+                        <line x1="450" y1="310" x2="480" y2="310" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <rect x="490" y="290" width="90" height="40" rx="4" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                        <text x="535" y="305" text-anchor="middle" fill="#34d399" font-size="10" font-weight="bold">Diagram</text>
+                        <text x="535" y="320" text-anchor="middle" fill="#34d399" font-size="10" font-weight="bold">Editing</text>
+
+                        <line x1="580" y1="310" x2="610" y2="310" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <rect x="620" y="290" width="100" height="40" rx="4" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                        <text x="670" y="305" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="bold">Diagram</text>
+                        <text x="670" y="320" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="bold">Understanding</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Perception-Level Tasks -->
+    <section class="slide" data-index="5">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    Perception Level
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-blue-400">Diagram-to-Code</span> Task</h2>
+                <p class="text-slate-400 mt-2">Decomposed into atomic abilities</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: D2C Decomposition -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-blue-500/30">
+                        <h3 class="text-xl font-bold text-blue-400 mb-4">
+                            <i class="fa-solid fa-code mr-2"></i>Diagram-to-Code Abilities
+                        </h3>
+
+                        <div class="space-y-4">
+                            <!-- Syntax Knowledge -->
+                            <div class="bg-cyan-500/10 p-4 rounded-xl border border-cyan-500/30">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 rounded-full bg-cyan-500/30 flex items-center justify-center">
+                                        <i class="fa-solid fa-file-code text-cyan-400"></i>
+                                    </div>
+                                    <h4 class="font-bold text-cyan-400">Syntax Knowledge</h4>
+                                </div>
+                                <p class="text-slate-300 text-sm">
+                                    Familiarity with TikZ-like or structured diagram syntax
+                                </p>
+                                <div class="mt-2 flex gap-2">
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">TikZ</span>
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">PGFPlots</span>
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">CircuiTikZ</span>
+                                </div>
+                            </div>
+
+                            <!-- Primitive Recognition -->
+                            <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                                        <i class="fa-solid fa-shapes text-emerald-400"></i>
+                                    </div>
+                                    <h4 class="font-bold text-emerald-400">Primitive Recognition</h4>
+                                </div>
+                                <p class="text-slate-300 text-sm">
+                                    Correctly recognize visual primitives, shapes, and elements in diagrams
+                                </p>
+                                <div class="mt-2 flex gap-2">
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">Shapes</span>
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">Lines</span>
+                                    <span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-400">Elements</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                            <p class="text-sm text-slate-300 text-center">
+                                <i class="fa-solid fa-check-double text-blue-400 mr-2"></i>
+                                Both abilities required for reliable code generation
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Visual Flow -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-xl font-bold text-slate-300 mb-4">
+                            <i class="fa-solid fa-diagram-project mr-2 text-purple-400"></i>D2C Process Flow
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                                    <i class="fa-solid fa-image text-blue-400 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-blue-400 font-bold">Input: Diagram Image</p>
+                                    <p class="text-slate-500 text-sm">Scientific figure from document</p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <i class="fa-solid fa-arrow-down text-slate-600 text-xl"></i>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
+                                    <i class="fa-solid fa-gears text-cyan-400 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-cyan-400 font-bold">Process: Perception + Syntax</p>
+                                    <p class="text-slate-500 text-sm">Recognize elements & map to code</p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center">
+                                <i class="fa-solid fa-arrow-down text-slate-600 text-xl"></i>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                                    <i class="fa-solid fa-file-code text-emerald-400 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-emerald-400 font-bold">Output: Executable Code</p>
+                                    <p class="text-slate-500 text-sm">TikZ/LaTeX that reproduces diagram</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Diagram Editing -->
+    <section class="slide" data-index="6">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                    Perception Level
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-emerald-400">Diagram Editing</span> Task</h2>
+                <p class="text-slate-400 mt-2">Building on Diagram-to-Code to test structural understanding</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: What it tests -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-xl font-bold text-emerald-400 mb-4">
+                            <i class="fa-solid fa-pen-to-square mr-2"></i>Editing Capabilities
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4 p-3 bg-pink-500/10 rounded-xl">
+                                <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center">
+                                    <i class="fa-solid fa-palette text-pink-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-pink-400 font-bold">Modify Colors</p>
+                                    <p class="text-slate-400 text-sm">Change element colors as instructed</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4 p-3 bg-blue-500/10 rounded-xl">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                    <i class="fa-solid fa-font text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-blue-400 font-bold">Edit Text</p>
+                                    <p class="text-slate-400 text-sm">Modify labels and annotations</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4 p-3 bg-amber-500/10 rounded-xl">
+                                <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                    <i class="fa-solid fa-arrows-up-down-left-right text-amber-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-amber-400 font-bold">Adjust Layout</p>
+                                    <p class="text-slate-400 text-sm">Reposition or resize elements</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4 p-3 bg-purple-500/10 rounded-xl">
+                                <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                    <i class="fa-solid fa-list-check text-purple-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-purple-400 font-bold">Follow Instructions</p>
+                                    <p class="text-slate-400 text-sm">Execute user commands precisely</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Why it matters -->
+                <div class="animate-fade-left space-y-4">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-3">
+                            <i class="fa-solid fa-question-circle mr-2 text-cyan-400"></i>Why Diagram Editing?
+                        </h3>
+                        <p class="text-slate-300">
+                            Tests whether the model <span class="text-white font-semibold">truly understands</span> the structure of the diagram, rather than just <span class="text-red-400">memorizing codes</span>.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-3">
+                            <i class="fa-solid fa-layer-group mr-2 text-emerald-400"></i>Builds on D2C
+                        </h3>
+                        <div class="space-y-2 text-sm text-slate-400">
+                            <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Requires all D2C abilities</p>
+                            <p><i class="fa-solid fa-plus text-emerald-400 mr-2"></i>Instruction grounding</p>
+                            <p><i class="fa-solid fa-plus text-emerald-400 mr-2"></i>Localized modifications</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: From Perception to Genuine Understanding -->
+    <section class="slide" data-index="7">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    Understanding Level
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">From Perception to <span class="text-purple-400">Genuine Understanding</span></h2>
+                <p class="text-slate-400 mt-2">Combining perceptual abilities with domain knowledge</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Prerequisites -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-blue-500/30 mb-4">
+                        <h3 class="text-lg font-bold text-blue-400 mb-3">
+                            <i class="fa-solid fa-stairs mr-2"></i>Prerequisites for Understanding
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-2 bg-blue-500/10 rounded-lg">
+                                <i class="fa-solid fa-check-circle text-blue-400"></i>
+                                <span class="text-slate-300">Diagram-to-Code <span class="text-blue-400">(D2C)</span></span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-emerald-500/10 rounded-lg">
+                                <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                                <span class="text-slate-300">Diagram Editing <span class="text-emerald-400">(DE)</span></span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-purple-500/10 rounded-lg">
+                                <i class="fa-solid fa-plus-circle text-purple-400"></i>
+                                <span class="text-slate-300">Domain Knowledge <span class="text-purple-400">(DK)</span></span>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-center">
+                            <p class="text-cyan-400 font-bold text-sm">
+                                D2C + DE + DK = Genuine Understanding
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Domain Packages -->
+                    <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                        <h4 class="text-sm font-bold text-slate-400 mb-2">
+                            <i class="fa-solid fa-box mr-2 text-amber-400"></i>Domain-Specific Packages
+                        </h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="bg-amber-500/10 p-2 rounded text-center">
+                                <span class="text-amber-400 font-mono">ChemFig</span>
+                                <p class="text-slate-500 text-xs">Chemistry</p>
+                            </div>
+                            <div class="bg-emerald-500/10 p-2 rounded text-center">
+                                <span class="text-emerald-400 font-mono">TKZ-Euclide</span>
+                                <p class="text-slate-500 text-xs">Geometry</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Higher-Level Tasks -->
+                <div class="animate-fade-left">
+                    <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/10 p-5 rounded-2xl border border-purple-500/30">
+                        <h3 class="text-xl font-bold text-purple-400 mb-4">
+                            <i class="fa-solid fa-brain mr-2"></i>Higher-Level Tasks
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="bg-slate-800/50 p-3 rounded-xl">
+                                <p class="text-purple-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-pen-fancy mr-2"></i>Caption Generation
+                                </p>
+                                <p class="text-slate-400 text-xs">Generate accurate captions for scientific figures</p>
+                            </div>
+
+                            <div class="bg-slate-800/50 p-3 rounded-xl">
+                                <p class="text-purple-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-comments mr-2"></i>Domain-Specific QA
+                                </p>
+                                <ul class="text-slate-400 text-xs space-y-1 ml-4">
+                                    <li>What is the symbolic meaning of this object?</li>
+                                    <li>What is the relationship between components?</li>
+                                    <li>What principle does this diagram represent?</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-purple-500/10 rounded-lg">
+                            <p class="text-sm text-slate-300 text-center">
+                                <i class="fa-solid fa-star text-purple-400 mr-2"></i>
+                                Requires <span class="text-white font-semibold">reasoning</span> about scientific meaning, not just recognizing shapes
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-microscope text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Goal:</span>
+                        Evaluate not just <span class="text-white font-semibold">what</span> the model sees, but <span class="text-white font-semibold">what it understands</span> about the scientific content
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 8: Metric Limitations for Current Benchmarks -->
+    <section class="slide" data-index="8">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-red-500/20 px-4 py-1 rounded-full text-red-400 text-sm font-bold mb-3">
+                    Evaluation Challenge
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-red-400">Metric Limitations</span> in Current Benchmarks</h2>
+                <p class="text-slate-400 mt-2">Why existing metrics fail to capture structural understanding</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Problems with Current Metrics -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-red-500/30">
+                        <h3 class="text-xl font-bold text-red-400 mb-4">
+                            <i class="fa-solid fa-xmark mr-2"></i>Problems with Current Metrics
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="bg-slate-800/50 p-3 rounded-xl border border-red-500/20">
+                                <p class="text-red-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-image mr-2"></i>Global Metrics (FID, CLIP)
+                                </p>
+                                <p class="text-slate-400 text-xs">Measure visual similarity, miss structural correctness</p>
+                            </div>
+                            <div class="bg-slate-800/50 p-3 rounded-xl border border-red-500/20">
+                                <p class="text-red-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-code mr-2"></i>Token-Level Metrics
+                                </p>
+                                <p class="text-slate-400 text-xs">Order-sensitive: equivalent code with different ordering penalized</p>
+                            </div>
+                            <div class="bg-slate-800/50 p-3 rounded-xl border border-red-500/20">
+                                <p class="text-red-400 font-bold text-sm mb-1">
+                                    <i class="fa-solid fa-eye-slash mr-2"></i>Focus on Syntax
+                                </p>
+                                <p class="text-slate-400 text-xs">Evaluate code correctness, not perceptual understanding</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: The Gap -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-center text-slate-300 mb-4">The Evaluation Gap</h3>
+                        <div class="space-y-3">
+                            <div class="bg-red-500/10 p-3 rounded-xl">
+                                <p class="text-center">
+                                    <span class="text-red-400 font-bold">High FID/CLIP Scores</span><br>
+                                    <span class="text-slate-400 text-sm">↓ Visual similarity looks good</span>
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <i class="fa-solid fa-not-equal text-red-400 text-2xl"></i>
+                            </div>
+                            <div class="bg-emerald-500/10 p-3 rounded-xl">
+                                <p class="text-center">
+                                    <span class="text-emerald-400 font-bold">Structural Correctness</span><br>
+                                    <span class="text-slate-400 text-sm">↓ Logical & topological accuracy</span>
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="question-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-lightbulb text-indigo-400 mr-2"></i>
+                        <span class="text-indigo-400 font-bold">Solution:</span>
+                        We need <span class="text-white font-semibold">primitive-level metrics</span> that are order-invariant and structurally meaningful
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Primitive-Level Evaluation Metrics -->
+    <section class="slide" data-index="9">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                    Our Solution
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white"><span class="text-emerald-400">Primitive-Level</span> Evaluation Metrics</h2>
+                <p class="text-slate-400 mt-2">Four semantic dimensions extracted directly from code syntax</p>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4 animate-fade-up">
+                <!-- Type -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-blue-500/30">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-shapes text-blue-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-blue-400 text-center mb-2">Type</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Element types with domain meaning
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        "resistor", "benzene", "scatter"
+                    </p>
+                </div>
+
+                <!-- Text -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-emerald-500/30">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-font text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-emerald-400 text-center mb-2">Text</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Labels, titles, annotations
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        with semantic positions
+                    </p>
+                </div>
+
+                <!-- Color -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-pink-500/30">
+                    <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-palette text-pink-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-pink-400 text-center mb-2">Color</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Draw/fill colors
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        component-specific
+                    </p>
+                </div>
+
+                <!-- Layout -->
+                <div class="bg-slate-800/50 p-4 rounded-2xl border border-amber-500/30">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-sitemap text-amber-400"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-amber-400 text-center mb-2">Layout</h3>
+                    <p class="text-xs text-slate-400 text-center">
+                        Spatial arrangement
+                    </p>
+                    <p class="text-xs text-slate-500 text-center mt-1">
+                        topological connectivity
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-5 animate-fade-up">
+                <!-- Why primitive-level? -->
+                <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                    <h4 class="text-sm font-bold text-slate-300 mb-3">
+                        <i class="fa-solid fa-check-circle text-emerald-400 mr-2"></i>Why Primitive-Level Metrics?
+                    </h4>
+                    <div class="space-y-2 text-xs text-slate-400">
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Order-invariant</span>: Equivalent code with different ordering is treated equally</p>
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Semantically meaningful</span>: Measures actual structural understanding</p>
+                        <p><i class="fa-solid fa-check text-emerald-400 mr-2"></i><span class="text-white">Edit-sensitive</span>: Detects instruction-conditioned modifications</p>
+                    </div>
+                </div>
+
+                <!-- Extraction method -->
+                <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                    <h4 class="text-sm font-bold text-slate-300 mb-3">
+                        <i class="fa-solid fa-code text-amber-400 mr-2"></i>Extraction Method
+                    </h4>
+                    <div class="space-y-2 text-xs text-slate-400">
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Primitives extracted from <span class="text-amber-400 font-mono">TikZ/LaTeX syntax</span></p>
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Domain-specific parsers for each package</p>
+                        <p><i class="fa-solid fa-arrow-right text-amber-400 mr-2"></i>Direct comparison without rendering</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-star text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Result:</span>
+                        Multi-granularity evaluation at <span class="text-white font-semibold">token-level, primitive-level, and global-level</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Comparison with Existing Benchmarks -->
+    <section class="slide" data-index="10">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    Benchmark Comparison
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Comparison with <span class="text-blue-400">Existing Benchmarks</span></h2>
+                <p class="text-slate-400 mt-2">Our benchmark provides the most comprehensive evaluation coverage</p>
+            </div>
+
+            <div class="animate-fade-up overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-blue-500/20">
+                            <th class="p-3 text-left text-blue-400 font-bold rounded-tl-xl">Benchmark</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">#Subjects</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">D2C</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">DE</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">DU</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Token</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Primitive</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Global</th>
+                            <th class="p-3 text-center text-blue-400 font-bold rounded-tr-xl">Modular Ability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">SGP-Bench</td>
+                            <td class="p-2 text-center text-slate-400">2</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">Design2Code</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">ChartMimic</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-2 text-slate-300">Plot2Code</td>
+                            <td class="p-2 text-center text-slate-400">1</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                            <td class="p-2 text-center text-emerald-400">&#10003;</td>
+                            <td class="p-2 text-center text-red-400">-</td>
+                        </tr>
+                        <tr class="bg-blue-500/10">
+                            <td class="p-2 text-blue-400 font-bold rounded-bl-xl">Ours</td>
+                            <td class="p-2 text-center text-blue-400 font-bold">6</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold">&#10003;</td>
+                            <td class="p-2 text-center text-emerald-400 font-bold rounded-br-xl">&#10003;</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-5 grid grid-cols-4 gap-4 animate-fade-up">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-cyan-500/30 text-center">
+                    <span class="text-2xl font-bold text-cyan-400">6</span>
+                    <p class="text-slate-400 text-sm">Subject Categories</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-blue-500/30 text-center">
+                    <span class="text-2xl font-bold text-blue-400">&#10003;</span>
+                    <p class="text-slate-400 text-sm">Progressive Tasks</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-2xl font-bold text-emerald-400">3</span>
+                    <p class="text-slate-400 text-sm">Evaluation Levels</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-purple-500/30 text-center">
+                    <span class="text-2xl font-bold text-purple-400">&#10003;</span>
+                    <p class="text-slate-400 text-sm">Modular Diagnosis</p>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-trophy text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Unique Contribution:</span>
+                        First benchmark with <span class="text-white font-semibold">progressive tasks + primitive-level metrics + modular ability diagnosis</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-pages').textContent = totalSlides;
+
+        // Create nav dots
+        const navDotsContainer = document.getElementById('nav-dots');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.onclick = function(e) {
+                e.stopPropagation();
+                goToSlide(i);
+            };
+            navDotsContainer.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+            document.getElementById('current-page').textContent = currentSlide + 1;
+
+            // Update nav dots
+            const dots = document.querySelectorAll('.nav-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>
