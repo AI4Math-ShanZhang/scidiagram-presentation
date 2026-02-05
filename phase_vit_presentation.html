@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase-Selective Vision Transformer</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 40px 60px 80px 60px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 60px;
+            font-size: 14px;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.7), transparent);
+            z-index: 100;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 50%;
+            transform: translateY(50%);
+            z-index: 200;
+        }
+
+        .nav-buttons.left {
+            left: 20px;
+        }
+
+        .nav-buttons.right {
+            right: 20px;
+        }
+
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(59, 130, 246, 0.6);
+            transform: scale(1.1);
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .nav-dot.active {
+            background: #3b82f6;
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(34, 197, 94, 0.1));
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            font-size: 24px;
+        }
+
+        .code-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+            border-left: 5px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border-left: 5px solid #ef4444;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .definition-box {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1));
+            border: 3px solid rgba(6, 182, 212, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .math-box {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1));
+            border: 2px solid rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-down {
+            animation: fadeDown 0.6s ease-out forwards;
+        }
+
+        .animate-fade-left {
+            animation: fadeLeft 0.6s ease-out forwards;
+        }
+
+        .animate-fade-right {
+            animation: fadeRight 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse-slow {
+            animation: pulse 2s infinite;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Complex number visualization */
+        .complex-plane {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(100, 116, 139, 0.5);
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        /* Visualization tabs */
+        .hidden {
+            display: none !important;
+        }
+
+        .viz-content img {
+            background: #1e293b;
+        }
+
+        .viz-tab-active {
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Lightbox / Zoom Modal */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .lightbox-close:hover {
+            opacity: 1;
+        }
+
+        .zoomable {
+            cursor: zoom-in;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .zoomable:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lightbox Modal for Image Zoom -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+        <img id="lightbox-img" src="" alt="Zoomed image">
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons left">
+        <button class="nav-btn" onclick="prevSlide()">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    </div>
+    <div class="nav-buttons right">
+        <button class="nav-btn" onclick="nextSlide()">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="nav-dots"></div>
+
+    <!-- Footer -->
+    <footer class="slide-footer">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 1rem;">
+            <div class="text-slate-400">
+                <span class="text-slate-300 font-medium">Phase-Selective ViT</span>
+            </div>
+            <div class="text-slate-400 font-medium tracking-wide text-center">
+                Content-Adaptive Tokenization via RoPE Phase Filters
+            </div>
+            <div class="flex items-center justify-end gap-4 text-slate-400">
+                <span class="text-slate-300 font-mono">
+                    <span id="current-page">1</span> / <span id="total-pages">13</span>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Slide 0: Title -->
+    <section class="slide active" data-index="0">
+        <div class="text-center max-w-5xl mx-auto">
+            <div class="mb-8 animate-fade-down">
+                <i class="fa-solid fa-wave-square text-cyan-400" style="font-size: 80px;"></i>
+            </div>
+            <h1 class="font-serif font-bold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-400 mb-6" style="font-size: 52px;">
+                Phase-Selective Vision Transformer
+            </h1>
+            <p class="text-2xl text-slate-300 mb-4">
+                Content-Adaptive Tokenization via <span class="text-cyan-400 font-semibold">RoPE Phase Filters</span>
+            </p>
+            <p class="text-lg text-slate-500 mb-10">
+                Discovering semantically meaningful token positions in a fully differentiable manner
+            </p>
+
+            <div class="grid grid-cols-3 gap-6 mt-10 text-left animate-fade-up">
+                <!-- Key Innovation 1 -->
+                <div class="bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 p-5 rounded-2xl border border-cyan-500/30">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-cyan-500/30 flex items-center justify-center">
+                            <i class="fa-solid fa-filter text-cyan-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-cyan-400">Phase Filters</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm">RoPE reinterpreted as learnable phase-selective filters for content detection</p>
+                </div>
+
+                <!-- Key Innovation 2 -->
+                <div class="bg-gradient-to-br from-purple-500/20 to-purple-500/5 p-5 rounded-2xl border border-purple-500/30">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-500/30 flex items-center justify-center">
+                            <i class="fa-solid fa-location-dot text-purple-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-purple-400">Adaptive Tokens</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm">Content-dependent token positions that adapt to image semantics</p>
+                </div>
+
+                <!-- Key Innovation 3 -->
+                <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 p-5 rounded-2xl border border-emerald-500/30">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                            <i class="fa-solid fa-arrows-rotate text-emerald-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-emerald-400">End-to-End</h3>
+                    </div>
+                    <p class="text-slate-400 text-sm">Fully differentiable via Straight-Through Estimator (STE)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 1: The Problem - Fixed Grid Tokenization -->
+    <section class="slide" data-index="1">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-6 text-center animate-fade-down">
+                <div class="inline-block bg-red-500/20 px-4 py-1 rounded-full text-red-400 text-sm font-bold mb-3">
+                    Motivation
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">The Problem: <span class="text-red-400">Shift Sensitivity</span></h2>
+                <p class="text-slate-400 mt-2">Standard ViTs are sensitive to small object movements due to fixed patch grids</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-8 items-center">
+                <!-- Left: Standard ViT Problem -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-red-500/30">
+                        <h3 class="text-xl font-bold text-red-400 mb-4">
+                            <i class="fa-solid fa-grid mr-2"></i>Standard ViT: Fixed Patches
+                        </h3>
+
+                        <!-- Visual: Shift Sensitivity -->
+                        <div class="flex justify-center mb-4 gap-4">
+                            <svg width="140" height="140" viewBox="0 0 140 140">
+                                <rect x="5" y="5" width="130" height="130" fill="#1e293b" stroke="#475569" stroke-width="2" rx="6"/>
+                                <g stroke="#ef4444" stroke-width="1" stroke-opacity="0.4">
+                                    <line x1="5" y1="48" x2="135" y2="48"/>
+                                    <line x1="5" y1="91" x2="135" y2="91"/>
+                                    <line x1="48" y1="5" x2="48" y2="135"/>
+                                    <line x1="91" y1="5" x2="91" y2="135"/>
+                                </g>
+                                <ellipse cx="70" cy="70" rx="28" ry="20" fill="#3b82f6" fill-opacity="0.4" stroke="#3b82f6" stroke-width="2"/>
+                                <text x="70" y="115" text-anchor="middle" fill="#64748b" font-size="9">Original position</text>
+                            </svg>
+                            <svg width="140" height="140" viewBox="0 0 140 140">
+                                <rect x="5" y="5" width="130" height="130" fill="#1e293b" stroke="#475569" stroke-width="2" rx="6"/>
+                                <g stroke="#ef4444" stroke-width="1" stroke-opacity="0.4">
+                                    <line x1="5" y1="48" x2="135" y2="48"/>
+                                    <line x1="5" y1="91" x2="135" y2="91"/>
+                                    <line x1="48" y1="5" x2="48" y2="135"/>
+                                    <line x1="91" y1="5" x2="91" y2="135"/>
+                                </g>
+                                <ellipse cx="85" cy="75" rx="28" ry="20" fill="#f59e0b" fill-opacity="0.4" stroke="#f59e0b" stroke-width="2"/>
+                                <path d="M 70 70 L 85 75" stroke="#ef4444" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#arrowhead)"/>
+                                <text x="70" y="115" text-anchor="middle" fill="#64748b" font-size="9">Small shift</text>
+                            </svg>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-2 text-red-400">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Fixed 16x16 patch grid ignores content</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-red-400">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Small shifts cause large representation changes</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-red-400">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Objects split across patch boundaries</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Phase-Selective Solution -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-xl font-bold text-emerald-400 mb-4">
+                            <i class="fa-solid fa-crosshairs mr-2"></i>Our Solution: Phase-Selective Kernels
+                        </h3>
+
+                        <!-- Visual: Adaptive selection -->
+                        <div class="flex justify-center mb-4">
+                            <svg width="220" height="140" viewBox="0 0 220 140">
+                                <rect x="5" y="5" width="100" height="100" fill="#1e293b" stroke="#475569" stroke-width="2" rx="6"/>
+                                <ellipse cx="55" cy="55" rx="28" ry="20" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="2"/>
+                                <g fill="#22c55e">
+                                    <circle cx="40" cy="50" r="4"/>
+                                    <circle cx="55" cy="45" r="4"/>
+                                    <circle cx="70" cy="52" r="4"/>
+                                    <circle cx="50" cy="62" r="4"/>
+                                    <circle cx="65" cy="60" r="4"/>
+                                </g>
+
+                                <rect x="115" y="5" width="100" height="100" fill="#1e293b" stroke="#475569" stroke-width="2" rx="6"/>
+                                <ellipse cx="175" cy="58" rx="28" ry="20" fill="#f59e0b" fill-opacity="0.3" stroke="#f59e0b" stroke-width="2"/>
+                                <g fill="#22c55e">
+                                    <circle cx="160" cy="53" r="4"/>
+                                    <circle cx="175" cy="48" r="4"/>
+                                    <circle cx="190" cy="55" r="4"/>
+                                    <circle cx="170" cy="65" r="4"/>
+                                    <circle cx="185" cy="63" r="4"/>
+                                </g>
+
+                                <text x="55" y="125" text-anchor="middle" fill="#22c55e" font-size="9">Same tokens</text>
+                                <text x="165" y="125" text-anchor="middle" fill="#22c55e" font-size="9">track object!</text>
+                            </svg>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Dynamically select informative regions</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Kernels match via similarity (like conv)</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Relative position encoded (inspired by RoPE)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-lightbulb text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Key Insight:</span>
+                        Phase-based encoding makes kernels selective to <span class="text-white font-semibold">both content AND spatial phase</span>, resulting in shift-robust, object-centric perception
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: RoPE Math - How Phase Encodes Position -->
+    <section class="slide" data-index="2">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    Mathematical Foundation
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">How <span class="text-purple-400">Phase Encodes Position</span></h2>
+                <p class="text-slate-400 mt-2">RoPE's multiplicative rotation enables relative position awareness</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Core Formula -->
+                <div class="animate-fade-right space-y-4">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-purple-500/30">
+                        <h3 class="text-lg font-bold text-purple-400 mb-3">
+                            <i class="fa-solid fa-rotate mr-2"></i>RoPE: Multiplicative Rotation
+                        </h3>
+                        <p class="text-slate-300 mb-4">
+                            Position is encoded by <span class="text-white font-semibold">rotating</span> the feature vector:
+                        </p>
+                        <div class="math-box text-center py-4">
+                            <p class="text-purple-300 text-xl">z<sub>pos</sub> = z · e<sup>iωx</sup></p>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            This is <span class="text-purple-400 font-semibold">multiplicative</span> - position modulates the feature, not added separately.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-amber-500/30">
+                        <h3 class="text-lg font-bold text-amber-400 mb-3">
+                            <i class="fa-solid fa-star mr-2"></i>Why Rotation is Special
+                        </h3>
+                        <p class="text-slate-300 mb-3">
+                            The inner product reveals <span class="text-amber-400 font-semibold">relative position</span> automatically:
+                        </p>
+                        <div class="math-box py-4">
+                            <p class="text-slate-400 text-xs mb-2">Two features at positions x₁ and x₂:</p>
+                            <p class="text-cyan-300 text-sm mb-1">z₁ = f₁ · e<sup>iωx₁</sup></p>
+                            <p class="text-cyan-300 text-sm mb-3">z₂ = f₂ · e<sup>iωx₂</sup></p>
+                            <p class="text-slate-400 text-xs mb-2">Inner product:</p>
+                            <p class="text-amber-300 text-center">z₁<sup>*</sup> · z₂ = f₁<sup>*</sup> · f₂ · e<sup>iω(x₂ - x₁)</sup></p>
+                            <div class="text-center mt-2">
+                                <span class="text-amber-400 text-sm">↑ relative position appears!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Visual + Application -->
+                <div class="animate-fade-left space-y-4">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-3">
+                            <i class="fa-solid fa-circle-nodes mr-2 text-cyan-400"></i>Rotation in Complex Plane
+                        </h3>
+                        <div class="flex justify-center">
+                            <svg width="260" height="200" viewBox="0 0 260 200">
+                                <rect x="5" y="5" width="250" height="190" fill="#0f172a" stroke="#475569" stroke-width="1" rx="8"/>
+                                <line x1="130" y1="10" x2="130" y2="190" stroke="#475569" stroke-width="1"/>
+                                <line x1="10" y1="100" x2="250" y2="100" stroke="#475569" stroke-width="1"/>
+                                <text x="240" y="115" fill="#64748b" font-size="11">Re</text>
+                                <text x="135" y="22" fill="#64748b" font-size="11">Im</text>
+
+                                <circle cx="130" cy="100" r="60" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="4,4"/>
+
+                                <line x1="130" y1="100" x2="180" y2="60" stroke="#3b82f6" stroke-width="3"/>
+                                <circle cx="180" cy="60" r="5" fill="#3b82f6"/>
+                                <text x="190" y="55" fill="#60a5fa" font-size="12" font-weight="bold">f</text>
+
+                                <line x1="130" y1="100" x2="80" y2="55" stroke="#a855f7" stroke-width="3"/>
+                                <circle cx="80" cy="55" r="5" fill="#a855f7"/>
+                                <text x="60" y="50" fill="#c084fc" font-size="12" font-weight="bold">f·e<tspan baseline-shift="super" font-size="9">iωx</tspan></text>
+
+                                <path d="M 165 70 A 40 40 0 0 0 100 65" fill="none" stroke="#f59e0b" stroke-width="2"/>
+                                <text x="130" y="55" fill="#f59e0b" font-size="12">ωx</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-lg font-bold text-emerald-400 mb-3">
+                            <i class="fa-solid fa-filter mr-2"></i>Application to Phase-Selective Kernels
+                        </h3>
+                        <div class="code-box text-sm">
+                            <p class="text-slate-500"># Kernel f at reference position</p>
+                            <p class="text-cyan-300">kernel = f<sub>k</sub></p>
+                            <p class="text-slate-500 mt-2"># Feature at position (y, x)</p>
+                            <p class="text-cyan-300">feature_rot = Φ(y,x) · e<sup>iω(y+x)</sup></p>
+                            <p class="text-slate-500 mt-2"># Similarity considers relative position!</p>
+                            <p class="text-emerald-300">response = Re{ f<sub>k</sub><sup>H</sup> · feature_rot }</p>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            The kernel "sees" where features are relative to it, enabling <span class="text-emerald-400">position-aware matching</span>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="highlight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-key text-amber-400 mr-2"></i>
+                        <span class="text-amber-400 font-bold">Key Property:</span>
+                        Like convolution, but kernels can encode <span class="text-white font-semibold">relative spatial relationships</span> through phase, making them both content-selective and position-aware
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Why Complex Learnable Kernels -->
+    <section class="slide" data-index="3">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-pink-500/20 px-4 py-1 rounded-full text-pink-400 text-sm font-bold mb-3">
+                    Design Rationale
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Why <span class="text-pink-400">Complex Learnable</span> Kernels?</h2>
+                <p class="text-slate-400 mt-2">Phase encoding enables position-aware pattern matching with efficient computation</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: The Intuition -->
+                <div class="animate-fade-right space-y-4">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-pink-500/30">
+                        <h3 class="text-lg font-bold text-pink-400 mb-3">
+                            <i class="fa-solid fa-lightbulb mr-2"></i>The Core Insight
+                        </h3>
+                        <p class="text-slate-300 mb-4">
+                            RoPE encodes 2D position as <span class="text-white font-semibold">rotation in complex space</span>:
+                        </p>
+                        <div class="math-box text-center py-3">
+                            <p class="text-pink-300">Feature at (y,x): z · e<sup>iω(y+x)</sup></p>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            A <span class="text-pink-400 font-semibold">complex filter f<sub>k</sub></span> can search for patterns at any rotational offset — it learns <span class="text-white">what</span> to look for AND <span class="text-white">where</span> relative to itself.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-cyan-500/30">
+                        <h3 class="text-lg font-bold text-cyan-400 mb-3">
+                            <i class="fa-solid fa-vector-square mr-2"></i>Complex Filter Structure
+                        </h3>
+                        <div class="code-box text-sm">
+                            <p class="text-slate-500"># Learnable filter has two parts</p>
+                            <p class="text-cyan-300">f<sub>k</sub> = f<sub>real</sub> + i · f<sub>imag</sub></p>
+                            <p class="text-slate-500 mt-2"># Can represent any phase offset φ</p>
+                            <p class="text-cyan-300">f<sub>k</sub> = |f| · e<sup>iφ</sup></p>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            The learned phase φ determines the <span class="text-cyan-400">spatial offset</span> the filter responds to!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Computation -->
+                <div class="animate-fade-left space-y-4">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-amber-500/30">
+                        <h3 class="text-lg font-bold text-amber-400 mb-3">
+                            <i class="fa-solid fa-rotate mr-2"></i>Rotation Encodes Offset
+                        </h3>
+                        <p class="text-slate-300 mb-3">
+                            A filter's learned phase determines which <span class="text-amber-400 font-semibold">relative positions</span> it responds to:
+                        </p>
+                        <div class="math-box py-3">
+                            <p class="text-slate-400 text-xs mb-2">Filter with phase φ:</p>
+                            <p class="text-amber-300 text-center">f<sub>k</sub> = |f| · e<sup>iφ</sup></p>
+                            <p class="text-slate-400 text-xs mt-3 mb-1">Matches features at rotational offset φ</p>
+                            <p class="text-slate-300 text-sm text-center">Different φ → different spatial preferences</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-lg font-bold text-emerald-400 mb-3">
+                            <i class="fa-solid fa-code mr-2"></i>Efficient Inner Product
+                        </h3>
+                        <p class="text-slate-300 mb-3">
+                            Complex inner product via <span class="text-emerald-400 font-semibold">einsum</span>:
+                        </p>
+                        <div class="code-box text-sm">
+                            <p class="text-slate-500"># Re{f<sup>H</sup> · Φ_rot} = f_re·Φ_rot_re + f_im·Φ_rot_im</p> 
+                            <p class="text-emerald-300 mt-2">resp_re = einsum('kp,bphw->bkhw',</p>
+                            <p class="text-emerald-300 pl-12">filters_real, rot_real)</p>
+                            <p class="text-emerald-300 mt-1">resp_im = einsum('kp,bphw->bkhw',</p>
+                            <p class="text-emerald-300 pl-12">filters_imag, rot_imag)</p>
+                            <p class="text-cyan-300 mt-2">response = resp_re + resp_im</p>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-3">
+                            Batch computation over all K filters and spatial locations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-star text-emerald-400 mr-2"></i>
+                        <span class="text-emerald-400 font-bold">Why Both Real & Imaginary?</span>
+                        Complex kernels let us learn
+                        <span class="text-white font-semibold">arbitrary rotational offsets.</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Architecture Overview -->
+    <section class="slide" data-index="4">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    Architecture
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Phase-Selective ViT <span class="text-blue-400">Pipeline</span></h2>
+                <p class="text-slate-400 mt-2">Four-stage processing from image to classification</p>
+            </div>
+
+            <div class="animate-fade-up">
+                <div class="flex justify-center">
+                    <svg width="950" height="320" viewBox="0 0 950 320">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa"/>
+                            </marker>
+                            <linearGradient id="pipelineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3"/>
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.3"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Background flow -->
+                        <rect x="30" y="100" width="890" height="120" rx="60" fill="url(#pipelineGrad)" opacity="0.3"/>
+
+                        <!-- Stage 1: Input Image -->
+                        <g transform="translate(50, 80)">
+                            <rect x="0" y="0" width="120" height="160" rx="12" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                            <rect x="15" y="30" width="90" height="90" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+                            <text x="60" y="75" text-anchor="middle" fill="#64748b" font-size="11">Image</text>
+                            <text x="60" y="90" text-anchor="middle" fill="#64748b" font-size="10">(B,3,H,W)</text>
+                            <text x="60" y="145" text-anchor="middle" fill="#3b82f6" font-size="14" font-weight="bold">Input</text>
+                        </g>
+
+                        <!-- Arrow 1 -->
+                        <line x1="180" y1="160" x2="215" y2="160" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <!-- Stage 2: CNN Backbone -->
+                        <g transform="translate(225, 80)">
+                            <rect x="0" y="0" width="140" height="160" rx="12" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                            <rect x="15" y="25" width="110" height="70" rx="8" fill="#0f172a" stroke="#06b6d4" stroke-width="1"/>
+                            <text x="70" y="50" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="bold">CNN</text>
+                            <text x="70" y="65" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="bold">Backbone</text>
+                            <text x="70" y="115" text-anchor="middle" fill="#64748b" font-size="10">(B,C,H',W')</text>
+                            <text x="70" y="145" text-anchor="middle" fill="#06b6d4" font-size="14" font-weight="bold">Features</text>
+                        </g>
+
+                        <!-- Arrow 2 -->
+                        <line x1="375" y1="160" x2="410" y2="160" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <!-- Stage 3: Phase-Selective Tokenizer -->
+                        <g transform="translate(420, 60)">
+                            <rect x="0" y="0" width="180" height="200" rx="12" fill="#1e293b" stroke="#a855f7" stroke-width="3"/>
+
+                            <!-- Inner components -->
+                            <rect x="10" y="25" width="160" height="50" rx="6" fill="#0f172a" stroke="#c084fc" stroke-width="1"/>
+                            <text x="90" y="45" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="bold">Filter Response</text>
+                            <text x="90" y="62" text-anchor="middle" fill="#64748b" font-size="9">(B,K,H',W')</text>
+
+                            <rect x="10" y="85" width="160" height="40" rx="6" fill="#0f172a" stroke="#c084fc" stroke-width="1"/>
+                            <text x="90" y="110" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="bold">STE Sampling</text>
+
+                            <text x="90" y="145" text-anchor="middle" fill="#64748b" font-size="10">tokens (B,K,C)</text>
+                            <text x="90" y="160" text-anchor="middle" fill="#64748b" font-size="10">positions (B,K,2)</text>
+                            <text x="90" y="190" text-anchor="middle" fill="#a855f7" font-size="14" font-weight="bold">Tokenizer</text>
+                        </g>
+
+                        <!-- Arrow 3 -->
+                        <line x1="610" y1="160" x2="645" y2="160" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <!-- Stage 4: RoPE Transformer -->
+                        <g transform="translate(655, 80)">
+                            <rect x="0" y="0" width="130" height="160" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                            <rect x="15" y="25" width="100" height="70" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1"/>
+                            <text x="65" y="50" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">RoPE</text>
+                            <text x="65" y="65" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">Transformer</text>
+                            <text x="65" y="82" text-anchor="middle" fill="#64748b" font-size="9">L blocks</text>
+                            <text x="65" y="115" text-anchor="middle" fill="#64748b" font-size="10">+ CLS token</text>
+                            <text x="65" y="145" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">Attention</text>
+                        </g>
+
+                        <!-- Arrow 4 -->
+                        <line x1="795" y1="160" x2="830" y2="160" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <!-- Stage 5: Output -->
+                        <g transform="translate(840, 80)">
+                            <rect x="0" y="0" width="90" height="160" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                            <rect x="15" y="30" width="60" height="60" rx="8" fill="#0f172a" stroke="#f59e0b" stroke-width="1"/>
+                            <text x="45" y="55" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="bold">MLP</text>
+                            <text x="45" y="70" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="bold">Head</text>
+                            <text x="45" y="115" text-anchor="middle" fill="#64748b" font-size="10">(B,classes)</text>
+                            <text x="45" y="145" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="bold">Output</text>
+                        </g>
+
+                        <!-- Highlight the key component -->
+                        <rect x="415" y="55" width="190" height="210" rx="14" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6,4">
+                            <animate attributeName="stroke-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+                        </rect>
+                        <text x="510" y="280" text-anchor="middle" fill="#a855f7" font-size="12" font-weight="bold">Key Innovation</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-4 animate-fade-up">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-blue-500/30 text-center">
+                    <span class="text-lg font-bold text-blue-400">224x224</span>
+                    <p class="text-slate-400 text-xs">Input Resolution</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-purple-500/30 text-center">
+                    <span class="text-lg font-bold text-purple-400">64-128</span>
+                    <p class="text-slate-400 text-xs">Tokens Sampled</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-emerald-500/30 text-center">
+                    <span class="text-lg font-bold text-emerald-400">6-24</span>
+                    <p class="text-slate-400 text-xs">Transformer Layers</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: STE Sampling -->
+    <section class="slide" data-index="5">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                    Differentiable Sampling
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Straight-Through <span class="text-emerald-400">Estimator</span></h2>
+                <p class="text-slate-400 mt-2">How to sample discrete positions while maintaining gradient flow</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: The Problem -->
+                <div class="animate-fade-right space-y-4">
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-red-500/30">
+                        <h3 class="text-lg font-bold text-red-400 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>The Challenge
+                        </h3>
+                        <p class="text-slate-300 mb-3">
+                            We need to select <span class="text-white font-semibold">discrete positions</span> (top-N from response map), but <span class="text-red-400 font-semibold">argmax has zero gradient</span>!
+                        </p>
+                        <div class="code-box">
+                            <p class="text-red-300"># Problem: no gradient!</p>
+                            <p class="text-slate-300">indices = logits.<span class="text-red-400">argmax</span>(dim=-1)</p>
+                            <p class="text-slate-500 text-xs mt-1"># ∂indices/∂logits = 0</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                        <h3 class="text-lg font-bold text-emerald-400 mb-3">
+                            <i class="fa-solid fa-check-circle mr-2"></i>STE Solution
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded bg-blue-500/30 flex items-center justify-center text-blue-400 font-bold flex-shrink-0">→</div>
+                                <div>
+                                    <p class="text-blue-400 font-semibold text-sm">Forward Pass</p>
+                                    <p class="text-slate-400 text-sm">Use hard argmax (discrete indices)</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0">←</div>
+                                <div>
+                                    <p class="text-emerald-400 font-semibold text-sm">Backward Pass</p>
+                                    <p class="text-slate-400 text-sm">Gradient flows through softmax</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: STE Visualization -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-4">
+                            <i class="fa-solid fa-code mr-2 text-cyan-400"></i>STE Implementation
+                        </h3>
+
+                        <div class="code-box mb-4 text-xs">
+                            <p class="text-slate-500"># Soft weights for gradient</p>
+                            <p class="text-cyan-300">soft = softmax(logits / τ)</p>
+                            <p class="text-slate-300"></p>
+                            <p class="text-slate-500"># Hard selection for forward</p>
+                            <p class="text-cyan-300">hard_idx = logits.argmax()</p>
+                            <p class="text-cyan-300">hard = one_hot(hard_idx)</p>
+                            <p class="text-slate-300"></p>
+                            <p class="text-slate-500"># STE trick: hard forward, soft backward</p>
+                            <p class="text-emerald-300">weights = hard - soft.detach() + soft</p>
+                            <p class="text-slate-300"></p>
+                            <p class="text-slate-500"># Sample tokens</p>
+                            <p class="text-amber-300">tokens = einsum('bnl,blc->bnc', weights, features)</p>
+                        </div>
+
+                        <div class="flex justify-center">
+                            <svg width="380" height="140" viewBox="0 0 380 140">
+                                <!-- Forward path -->
+                                <text x="190" y="12" text-anchor="middle" fill="#3b82f6" font-size="10">Forward: Discrete</text>
+
+                                <rect x="10" y="20" width="80" height="40" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                                <text x="50" y="45" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="bold">Logits</text>
+
+                                <path d="M 95 40 L 125 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                                <rect x="130" y="20" width="80" height="40" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                                <text x="170" y="45" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="bold">Argmax</text>
+
+                                <path d="M 215 40 L 245 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                                <rect x="250" y="20" width="100" height="40" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                                <text x="300" y="45" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="bold">Hard Indices</text>
+
+                                <!-- Backward path -->
+                                <rect x="10" y="75" width="80" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+                                <text x="50" y="100" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">∂Loss</text>
+
+                                <path d="M 125 95 L 95 95" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                                <rect x="130" y="75" width="80" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+                                <text x="170" y="100" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">Softmax</text>
+
+                                <path d="M 245 95 L 215 95" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                                <rect x="250" y="75" width="100" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+                                <text x="300" y="100" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">∂Logits</text>
+
+                                <text x="190" y="132" text-anchor="middle" fill="#22c55e" font-size="10">Backward: Soft Gradient</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 animate-fade-up">
+                <div class="insight-box">
+                    <p class="text-lg text-slate-200 text-center">
+                        <i class="fa-solid fa-magic text-green-400 mr-2"></i>
+                        <span class="text-green-400 font-bold">Magic:</span>
+                        At inference: true discrete token positions. During training: gradients flow to update filters and backbone!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Complete Tokenization Flow -->
+    <section class="slide" data-index="6">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    Complete Pipeline
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Tokenization <span class="text-purple-400">Flow</span></h2>
+            </div>
+
+            <div class="animate-fade-up">
+                <div class="flex justify-center">
+                    <svg width="950" height="450" viewBox="0 0 950 450">
+                        <defs>
+                            <marker id="arrow2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Step 1: Dense Features -->
+                        <g transform="translate(20, 30)">
+                            <text x="70" y="0" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">1. Dense Features</text>
+                            <rect x="0" y="15" width="140" height="100" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                            <text x="70" y="55" text-anchor="middle" fill="#60a5fa" font-size="12">Φ(u,v)</text>
+                            <text x="70" y="75" text-anchor="middle" fill="#64748b" font-size="10">(B, C, H, W)</text>
+                            <text x="70" y="100" text-anchor="middle" fill="#64748b" font-size="9">from CNN backbone</text>
+                        </g>
+
+                        <!-- Arrow 1 -->
+                        <path d="M 170 80 L 200 80" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                        <!-- Step 2: RoPE Rotation -->
+                        <g transform="translate(210, 30)">
+                            <text x="80" y="0" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">2. RoPE Rotation</text>
+                            <rect x="0" y="15" width="160" height="100" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                            <text x="80" y="50" text-anchor="middle" fill="#c084fc" font-size="11">Φ<tspan baseline-shift="sub" font-size="9">rot</tspan> = R(u,v) · Φ</text>
+                            <text x="80" y="70" text-anchor="middle" fill="#c084fc" font-size="11">z → z · e<tspan baseline-shift="super" font-size="9">iθ(u,v)</tspan></text>
+                            <text x="80" y="100" text-anchor="middle" fill="#64748b" font-size="9">position-dependent rotation</text>
+                        </g>
+
+                        <!-- Arrow 2 -->
+                        <path d="M 380 80 L 410 80" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                        <!-- Step 3: Filter Response -->
+                        <g transform="translate(420, 30)">
+                            <text x="90" y="0" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">3. Filter Responses</text>
+                            <rect x="0" y="15" width="180" height="100" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                            <text x="90" y="50" text-anchor="middle" fill="#22d3ee" font-size="11">r<tspan baseline-shift="sub" font-size="9">k</tspan>(u,v) = Re{f<tspan baseline-shift="sub" font-size="9">k</tspan><tspan baseline-shift="super" font-size="9">H</tspan> · Φ<tspan baseline-shift="sub" font-size="9">rot</tspan>}</text>
+                            <text x="90" y="75" text-anchor="middle" fill="#64748b" font-size="10">(B, K, H, W)</text>
+                            <text x="90" y="100" text-anchor="middle" fill="#64748b" font-size="9">K filter response maps</text>
+                        </g>
+
+                        <!-- Arrow 3 -->
+                        <path d="M 610 80 L 640 80" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                        <!-- Step 4: Best Response -->
+                        <g transform="translate(650, 30)">
+                            <text x="85" y="0" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">4. Best Response</text>
+                            <rect x="0" y="15" width="170" height="100" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="85" y="50" text-anchor="middle" fill="#fbbf24" font-size="11">r<tspan baseline-shift="sub" font-size="9">best</tspan> = max<tspan baseline-shift="sub" font-size="9">k</tspan> r<tspan baseline-shift="sub" font-size="9">k</tspan>(u,v)</text>
+                            <text x="85" y="75" text-anchor="middle" fill="#64748b" font-size="10">(B, H, W)</text>
+                            <text x="85" y="100" text-anchor="middle" fill="#64748b" font-size="9">+ filter_id per location</text>
+                        </g>
+
+                        <!-- Arrow 4 (down) -->
+                        <path d="M 735 145 L 735 175" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                        <!-- Step 5: STE Sampling -->
+                        <g transform="translate(560, 190)">
+                            <text x="175" y="0" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">5. STE Sampling (Top-N)</text>
+                            <rect x="0" y="15" width="350" height="100" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+
+                            <g transform="translate(20, 35)">
+                                <text x="0" y="0" fill="#34d399" font-size="10">indices = topk(r<tspan baseline-shift="sub" font-size="8">best</tspan>.flatten(), N)</text>
+                                <text x="0" y="20" fill="#34d399" font-size="10">soft = softmax(r<tspan baseline-shift="sub" font-size="8">best</tspan> / τ)</text>
+                                <text x="0" y="40" fill="#34d399" font-size="10">weights = onehot(indices) - soft.detach() + soft</text>
+                            </g>
+
+                            <text x="175" y="100" text-anchor="middle" fill="#64748b" font-size="9">Differentiable discrete selection</text>
+                        </g>
+
+                        <!-- Arrow 5 (down) -->
+                        <path d="M 735 305 L 735 335" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                        <!-- Step 6: Outputs -->
+                        <g transform="translate(120, 350)">
+                            <rect x="0" y="0" width="690" height="80" rx="12" fill="#0f4c5c" stroke="#22d3ee" stroke-width="2"/>
+                            <text x="345" y="25" text-anchor="middle" fill="#22d3ee" font-size="14" font-weight="bold">6. Tokenization Outputs</text>
+
+                            <g transform="translate(30, 40)">
+                                <rect x="0" y="0" width="180" height="30" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+                                <text x="90" y="20" text-anchor="middle" fill="#60a5fa" font-size="11">tokens (B, N, C)</text>
+                            </g>
+
+                            <g transform="translate(250, 40)">
+                                <rect x="0" y="0" width="180" height="30" rx="6" fill="#1e293b" stroke="#a855f7" stroke-width="1"/>
+                                <text x="90" y="20" text-anchor="middle" fill="#c084fc" font-size="11">positions (B, N, 2)</text>
+                            </g>
+
+                            <g transform="translate(470, 40)">
+                                <rect x="0" y="0" width="180" height="30" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+                                <text x="90" y="20" text-anchor="middle" fill="#fbbf24" font-size="11">filter_ids (B, N)</text>
+                            </g>
+
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Token Outputs Explained -->
+    <section class="slide" data-index="9">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-cyan-500/20 px-4 py-1 rounded-full text-cyan-400 text-sm font-bold mb-3">
+                    Output Details
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Token <span class="text-cyan-400">Information</span></h2>
+                <p class="text-slate-400 mt-2">Rich information for each sampled token</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left: Geometric Shape Training Samples -->
+                <div class="animate-fade-right">
+                    <div class="bg-slate-800/30 p-4 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-3 text-center">
+                            <i class="fa-solid fa-shapes mr-2 text-emerald-400"></i>Training Samples (Geometric Shapes)
+                        </h3>
+                        <div class="grid grid-cols-5 gap-2">
+                            <div class="text-center">
+                                <img src="assets/shapes/circle.png" alt="circle" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">circle</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/triangle.png" alt="triangle" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">triangle</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/square.png" alt="square" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">square</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/rectangle.png" alt="rectangle" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">rectangle</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/star.png" alt="star" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">star</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/hexagon.png" alt="hexagon" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">hexagon</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/pentagon.png" alt="pentagon" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">pentagon</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/ellipse.png" alt="ellipse" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">ellipse</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/arrow.png" alt="arrow" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">arrow</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="assets/shapes/cross.png" alt="cross" class="w-full rounded border border-slate-600/50 bg-white">
+                                <p class="text-slate-500 text-xs mt-1">cross</p>
+                            </div>
+                        </div>
+                        <p class="text-slate-500 text-xs text-center mt-3">16 classes synthetic geometric shapes dataset</p>
+                    </div>
+                </div>
+
+                <!-- Right: Real Filter Visualizations -->
+                <div class="animate-fade-left">
+                    <div class="bg-slate-800/30 p-4 rounded-2xl border border-slate-700">
+                        <h3 class="text-lg font-bold text-slate-300 mb-3 text-center">
+                            <i class="fa-solid fa-chart-line mr-2 text-cyan-400"></i>Filter Pattern Evolution
+                        </h3>
+
+                        <!-- Tab buttons -->
+                        <div class="flex justify-center gap-2 mb-3">
+                            <button onclick="showVisualization('shapes')" id="btn-shapes" class="px-3 py-1 text-xs rounded-full bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/50 transition-all viz-tab-active">
+                                Geometric Shapes
+                            </button>
+                            <button onclick="showVisualization('cifar100')" id="btn-cifar100" class="px-3 py-1 text-xs rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/50 hover:bg-slate-600/50 transition-all">
+                                CIFAR-100
+                            </button>
+                        </div>
+
+                        <!-- Geometric Shapes Visualization -->
+                        <div id="viz-shapes" class="viz-content">
+                            <img src="assets/filter_amplitude_phase_shapes.png" alt="Filter Patterns - Geometric Shapes"
+                                 class="w-full rounded-lg border border-slate-600/50 zoomable"
+                                 style="max-height: 380px; object-fit: contain;"
+                                 onclick="openLightbox(this.src)">
+                            <p class="text-slate-500 text-xs text-center mt-2">
+                                Geometric Shapes: Initial (random) vs Trained (Epoch 100)
+                            </p>
+                        </div>
+
+                        <!-- CIFAR-100 Visualization -->
+                        <div id="viz-cifar100" class="viz-content hidden">
+                            <img src="assets/filter_amplitude_phase_cifar100.png" alt="Filter Patterns - CIFAR-100"
+                                 class="w-full rounded-lg border border-slate-600/50 zoomable"
+                                 style="max-height: 380px; object-fit: contain;"
+                                 onclick="openLightbox(this.src)">
+                            <p class="text-slate-500 text-xs text-center mt-2">
+                                CIFAR-100: Initial (random) vs Trained (Epoch 100)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Filter Response Visualizations -->
+    <section class="slide" data-index="9">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-4 text-center animate-fade-down">
+                <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                    Visualization
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Filter <span class="text-purple-400">Responses</span></h2>
+                <p class="text-slate-400 mt-2">How learned filters respond to different inputs</p>
+            </div>
+
+            <!-- Dataset tabs -->
+            <div class="flex justify-center gap-3 mb-4">
+                <button onclick="showFilterResponse('shapes')" id="btn-resp-shapes" class="px-4 py-2 text-sm rounded-full bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/50 transition-all resp-tab-active">
+                    Geometric Shapes
+                </button>
+                <button onclick="showFilterResponse('cifar')" id="btn-resp-cifar" class="px-4 py-2 text-sm rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/50 hover:bg-slate-600/50 transition-all">
+                    CIFAR-100
+                </button>
+            </div>
+
+            <!-- Geometric Shapes Filter Responses -->
+            <div id="resp-shapes" class="resp-content animate-fade-up">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes_circle.png" alt="Circle filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Circle</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes_triangle.png" alt="Triangle filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Triangle</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes_star.png" alt="Star filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Star</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CIFAR-100 Filter Responses -->
+            <div id="resp-cifar" class="resp-content hidden">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/cifar_apple.png" alt="Apple filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Apple</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/cifar_bear.png" alt="Bear filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Bear</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/cifar_bicycle.png" alt="Bicycle filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Bicycle</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Model Variants -->
+    <section class="slide" data-index="10">
+        <div class="max-w-6xl mx-auto w-full">
+            <div class="mb-5 text-center animate-fade-down">
+                <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                    Model Zoo
+                </div>
+                <h2 class="text-4xl font-bold font-serif text-white">Phase ViT <span class="text-blue-400">Variants</span></h2>
+                <p class="text-slate-400 mt-2">From tiny to large - scaling the architecture</p>
+            </div>
+
+            <div class="animate-fade-up overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-blue-500/20">
+                            <th class="p-3 text-left text-blue-400 font-bold rounded-tl-xl">Variant</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Embed Dim</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Depth</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Heads</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Filters</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Tokens</th>
+                            <th class="p-3 text-center text-blue-400 font-bold">Drop Path</th>
+                            <th class="p-3 text-center text-blue-400 font-bold rounded-tr-xl">Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-cyan-400 font-bold">phase_vit_tiny</td>
+                            <td class="p-3 text-center text-slate-300">256</td>
+                            <td class="p-3 text-center text-slate-300">6</td>
+                            <td class="p-3 text-center text-slate-300">4</td>
+                            <td class="p-3 text-center text-slate-300">32</td>
+                            <td class="p-3 text-center text-slate-300">64</td>
+                            <td class="p-3 text-center text-slate-300">0.0</td>
+                            <td class="p-3 text-center text-slate-400 text-xs">Fast prototyping</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-emerald-400 font-bold">phase_vit_small</td>
+                            <td class="p-3 text-center text-slate-300">384</td>
+                            <td class="p-3 text-center text-slate-300">12</td>
+                            <td class="p-3 text-center text-slate-300">6</td>
+                            <td class="p-3 text-center text-slate-300">64</td>
+                            <td class="p-3 text-center text-slate-300">64</td>
+                            <td class="p-3 text-center text-slate-300">0.1</td>
+                            <td class="p-3 text-center text-slate-400 text-xs">Balanced performance</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-purple-400 font-bold">phase_vit_base</td>
+                            <td class="p-3 text-center text-slate-300">512</td>
+                            <td class="p-3 text-center text-slate-300">12</td>
+                            <td class="p-3 text-center text-slate-300">8</td>
+                            <td class="p-3 text-center text-slate-300">64</td>
+                            <td class="p-3 text-center text-slate-300">64</td>
+                            <td class="p-3 text-center text-slate-300">0.1</td>
+                            <td class="p-3 text-center text-slate-400 text-xs">Standard training</td>
+                        </tr>
+                        <tr class="bg-amber-500/10">
+                            <td class="p-3 text-amber-400 font-bold rounded-bl-xl">phase_vit_large</td>
+                            <td class="p-3 text-center text-amber-300">768</td>
+                            <td class="p-3 text-center text-amber-300">24</td>
+                            <td class="p-3 text-center text-amber-300">12</td>
+                            <td class="p-3 text-center text-amber-300">128</td>
+                            <td class="p-3 text-center text-amber-300">128</td>
+                            <td class="p-3 text-center text-amber-300">0.2</td>
+                            <td class="p-3 text-center text-amber-400 text-xs rounded-br-xl">Best accuracy</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Experiment Comparison Table -->
+            <div class="mt-6 animate-fade-up">
+                <h3 class="text-lg font-bold text-emerald-400 mb-3 text-center">
+                    <i class="fa-solid fa-flask mr-2"></i>Experiment Results (Base Model)
+                </h3>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-emerald-500/20">
+                            <th class="p-3 text-left text-emerald-400 font-bold rounded-tl-xl">Model</th>
+                            <th class="p-3 text-center text-emerald-400 font-bold">Tokens</th>
+                            <th class="p-3 text-center text-emerald-400 font-bold">Geometric Shapes</th>
+                            <th class="p-3 text-center text-emerald-400 font-bold rounded-tr-xl">CIFAR-100</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700 bg-slate-800/30">
+                            <td class="p-3 text-slate-400 font-bold">Patch ViT (baseline)</td>
+                            <td class="p-3 text-center text-slate-300">14×14 = 196</td>
+                            <td class="p-3 text-center text-slate-300">--.--%</td>
+                            <td class="p-3 text-center text-slate-300">--.--%</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-cyan-400 font-bold">Phase ViT (topn=64)</td>
+                            <td class="p-3 text-center text-cyan-300">64</td>
+                            <td class="p-3 text-center text-cyan-300">--.--%</td>
+                            <td class="p-3 text-center text-cyan-300">--.--%</td>
+                        </tr>
+                        <tr class="bg-purple-500/10">
+                            <td class="p-3 text-purple-400 font-bold rounded-bl-xl">Phase ViT (topn=128)</td>
+                            <td class="p-3 text-center text-purple-300">128</td>
+                            <td class="p-3 text-center text-purple-300">--.--%</td>
+                            <td class="p-3 text-center text-purple-300 rounded-br-xl">--.--%</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="text-slate-500 text-xs text-center mt-2">Eval set accuracy comparison with same base model architecture</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-pages').textContent = totalSlides;
+
+        // Create nav dots
+        const navDotsContainer = document.getElementById('nav-dots');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.onclick = function(e) {
+                e.stopPropagation();
+                goToSlide(i);
+            };
+            navDotsContainer.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+            document.getElementById('current-page').textContent = currentSlide + 1;
+
+            // Update nav dots
+            const dots = document.querySelectorAll('.nav-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Visualization tab switching for Token Information slide
+        function showVisualization(dataset) {
+            // Hide all visualizations
+            document.querySelectorAll('.viz-content').forEach(el => el.classList.add('hidden'));
+            // Reset all tab buttons for viz
+            document.querySelectorAll('[id^="btn-shapes"], [id^="btn-cifar100"]').forEach(btn => {
+                btn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-500/50', 'viz-tab-active');
+                btn.classList.add('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+            });
+            // Show selected visualization
+            document.getElementById('viz-' + dataset).classList.remove('hidden');
+            // Activate selected tab
+            const activeBtn = document.getElementById('btn-' + dataset);
+            activeBtn.classList.remove('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+            activeBtn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-500/50', 'viz-tab-active');
+        }
+
+        // Filter Response tab switching
+        function showFilterResponse(dataset) {
+            // Hide all response content
+            document.querySelectorAll('.resp-content').forEach(el => el.classList.add('hidden'));
+            // Reset all response tab buttons
+            document.querySelectorAll('[id^="btn-resp-"]').forEach(btn => {
+                btn.classList.remove('bg-emerald-500/30', 'text-emerald-400', 'border-emerald-500/50', 'resp-tab-active');
+                btn.classList.add('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+            });
+            // Show selected response
+            document.getElementById('resp-' + dataset).classList.remove('hidden');
+            // Activate selected tab
+            const activeBtn = document.getElementById('btn-resp-' + dataset);
+            activeBtn.classList.remove('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+            activeBtn.classList.add('bg-emerald-500/30', 'text-emerald-400', 'border-emerald-500/50', 'resp-tab-active');
+        }
+
+        // Lightbox functions for image zoom
+        function openLightbox(imgSrc) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = imgSrc;
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>
