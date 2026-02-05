@@ -1209,14 +1209,17 @@
             <!-- Dataset tabs -->
             <div class="flex justify-center gap-3 mb-4">
                 <button onclick="showFilterResponse('shapes')" id="btn-resp-shapes" class="px-4 py-2 text-sm rounded-full bg-emerald-500/30 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/50 transition-all resp-tab-active">
-                    Geometric Shapes
+                    Geometric Shapes (64)
+                </button>
+                <button onclick="showFilterResponse('shapes128')" id="btn-resp-shapes128" class="px-4 py-2 text-sm rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/50 hover:bg-slate-600/50 transition-all">
+                    Geometric Shapes (128)
                 </button>
                 <button onclick="showFilterResponse('cifar')" id="btn-resp-cifar" class="px-4 py-2 text-sm rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/50 hover:bg-slate-600/50 transition-all">
-                    CIFAR-100
+                    CIFAR-100 (128)
                 </button>
             </div>
 
-            <!-- Geometric Shapes Filter Responses -->
+            <!-- Geometric Shapes Filter Responses (topn=64) -->
             <div id="resp-shapes" class="resp-content animate-fade-up">
                 <div class="grid grid-cols-3 gap-4">
                     <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
@@ -1233,6 +1236,30 @@
                     </div>
                     <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
                         <img src="assets/filter_responses/shapes_star.png" alt="Star filter response"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Star</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Geometric Shapes Filter Responses (topn=128) -->
+            <div id="resp-shapes128" class="resp-content hidden">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes128_circle.png" alt="Circle filter response (128)"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Circle</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes128_triangle.png" alt="Triangle filter response (128)"
+                             class="w-full rounded-lg border border-slate-600/50 zoomable"
+                             onclick="openLightbox(this.src)">
+                        <p class="text-slate-400 text-xs text-center mt-2">Triangle</p>
+                    </div>
+                    <div class="bg-slate-800/30 p-3 rounded-xl border border-slate-700">
+                        <img src="assets/filter_responses/shapes128_star.png" alt="Star filter response (128)"
                              class="w-full rounded-lg border border-slate-600/50 zoomable"
                              onclick="openLightbox(this.src)">
                         <p class="text-slate-400 text-xs text-center mt-2">Star</p>
@@ -1354,19 +1381,19 @@
                         <tr class="border-b border-slate-700 bg-slate-800/30">
                             <td class="p-3 text-slate-400 font-bold">Patch ViT (baseline)</td>
                             <td class="p-3 text-center text-slate-300">14×14 = 196</td>
-                            <td class="p-3 text-center text-slate-300">--.--%</td>
-                            <td class="p-3 text-center text-slate-300">--.--%</td>
+                            <td class="p-3 text-center text-slate-300">92.50%</td>
+                            <td class="p-3 text-center text-slate-300">63.80%</td>
                         </tr>
                         <tr class="border-b border-slate-700">
                             <td class="p-3 text-cyan-400 font-bold">Phase ViT (topn=64)</td>
                             <td class="p-3 text-center text-cyan-300">64</td>
-                            <td class="p-3 text-center text-cyan-300">--.--%</td>
-                            <td class="p-3 text-center text-cyan-300">--.--%</td>
+                            <td class="p-3 text-center text-cyan-300">83.00%</td>
+                            <td class="p-3 text-center text-cyan-300">60.56%</td>
                         </tr>
                         <tr class="bg-purple-500/10">
                             <td class="p-3 text-purple-400 font-bold rounded-bl-xl">Phase ViT (topn=128)</td>
                             <td class="p-3 text-center text-purple-300">128</td>
-                            <td class="p-3 text-center text-purple-300">--.--%</td>
+                            <td class="p-3 text-center text-purple-300">93.88%</td>
                             <td class="p-3 text-center text-purple-300 rounded-br-xl">--.--%</td>
                         </tr>
                     </tbody>
