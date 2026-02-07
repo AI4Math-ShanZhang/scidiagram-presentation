@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Long Video Understanding: Tools Survey (2023-2026)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs" type="module"></script>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --surface: #1a1a2e;
+            --surface-2: #222240;
+            --border: #2d2d50;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --secondary-light: #34d399;
+            --accent: #f59e0b;
+            --accent-light: #fbbf24;
+            --danger: #ef4444;
+            --danger-light: #f87171;
+            --info: #3b82f6;
+            --info-light: #60a5fa;
+            --pink: #ec4899;
+            --pink-light: #f472b6;
+            --cyan: #06b6d4;
+            --cyan-light: #22d3ee;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--primary-light), var(--cyan-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        header .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        header .meta {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        header .meta span {
+            background: var(--surface-2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            margin: 0 0.25rem;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section > h2 {
+            font-size: 1.6rem;
+            color: var(--primary-light);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .section > h3 {
+            font-size: 1.25rem;
+            color: var(--secondary-light);
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        p { margin-bottom: 1rem; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover { border-color: var(--primary); }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .card-badges {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-venue { background: var(--primary); color: #fff; }
+        .badge-year { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+        .badge-agentic { background: var(--secondary); color: #fff; }
+        .badge-trained { background: var(--accent); color: #000; }
+        .badge-pipeline { background: var(--info); color: #fff; }
+        .badge-memory { background: var(--pink); color: #fff; }
+        .badge-programmatic { background: var(--cyan); color: #000; }
+
+        .card-description {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-source {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        .card-source a {
+            color: var(--info-light);
+            text-decoration: none;
+        }
+
+        .card-source a:hover { text-decoration: underline; }
+
+        /* Tool tables */
+        .tool-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .tool-table thead th {
+            background: var(--surface-2);
+            color: var(--primary-light);
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary);
+            white-space: nowrap;
+        }
+
+        .tool-table tbody td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .tool-table tbody tr:hover { background: rgba(99, 102, 241, 0.05); }
+
+        .tool-name {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            color: var(--accent-light);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* Summary table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.82rem;
+        }
+
+        .summary-table thead th {
+            background: var(--primary);
+            color: #fff;
+            text-align: left;
+            padding: 0.6rem 0.6rem;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        .summary-table tbody td {
+            padding: 0.5rem 0.6rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .summary-table tbody tr:nth-child(even) { background: var(--surface); }
+        .summary-table tbody tr:hover { background: var(--surface-2); }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Taxonomy section */
+        .taxonomy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .taxonomy-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .taxonomy-card.t1 { border-left-color: var(--primary); }
+        .taxonomy-card.t2 { border-left-color: var(--secondary); }
+        .taxonomy-card.t3 { border-left-color: var(--accent); }
+        .taxonomy-card.t4 { border-left-color: var(--danger); }
+        .taxonomy-card.t5 { border-left-color: var(--info); }
+        .taxonomy-card.t6 { border-left-color: var(--pink); }
+        .taxonomy-card.t7 { border-left-color: var(--cyan); }
+        .taxonomy-card.t8 { border-left-color: #a78bfa; }
+        .taxonomy-card.t9 { border-left-color: #fb923c; }
+        .taxonomy-card.t10 { border-left-color: #4ade80; }
+
+        .taxonomy-num {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.3rem;
+        }
+
+        .taxonomy-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .taxonomy-systems {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .taxonomy-desc {
+            font-size: 0.88rem;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .taxonomy-why {
+            font-size: 0.85rem;
+            color: var(--secondary-light);
+            font-style: italic;
+        }
+
+        /* Highlight boxes */
+        .highlight {
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+            border-left: 4px solid;
+        }
+
+        .highlight-insight {
+            background: rgba(99, 102, 241, 0.08);
+            border-left-color: var(--primary);
+        }
+
+        .highlight-warning {
+            background: rgba(245, 158, 11, 0.08);
+            border-left-color: var(--accent);
+        }
+
+        .highlight-success {
+            background: rgba(16, 185, 129, 0.08);
+            border-left-color: var(--secondary);
+        }
+
+        .highlight-danger {
+            background: rgba(239, 68, 68, 0.08);
+            border-left-color: var(--danger);
+        }
+
+        .highlight strong {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.95rem;
+        }
+
+        .highlight p { margin-bottom: 0; font-size: 0.92rem; }
+
+        /* Comparison diagram */
+        .comparison-box {
+            display: none; /* replaced by comparison-grid */
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .comparison-grid .cg-header {
+            display: grid;
+            grid-template-columns: 1fr 50px 1fr 1fr;
+            background: var(--primary);
+            padding: 0.75rem 1.25rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #fff;
+        }
+
+        .comparison-grid .cg-header .cg-mid { text-align: center; }
+
+        .cg-row {
+            display: grid;
+            grid-template-columns: 1fr 50px 1fr 1fr;
+            align-items: center;
+            padding: 0.9rem 1.25rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .cg-row:last-child { border-bottom: none; }
+        .cg-row:hover { background: var(--surface-2); }
+        .cg-row:nth-child(odd) { background: rgba(26, 26, 46, 0.6); }
+        .cg-row:nth-child(odd):hover { background: var(--surface-2); }
+
+        .cg-short {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .cg-arrow {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--accent-light);
+        }
+
+        .cg-long {
+            font-size: 0.9rem;
+            color: var(--danger-light);
+            font-weight: 600;
+        }
+
+        .cg-tool {
+            font-size: 0.88rem;
+            color: var(--secondary-light);
+            font-weight: 700;
+            padding-left: 0.75rem;
+            border-left: 3px solid var(--secondary);
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid .cg-header,
+            .cg-row {
+                grid-template-columns: 1fr;
+                gap: 0.3rem;
+            }
+            .cg-arrow { display: none; }
+            .comparison-grid .cg-header .cg-mid { display: none; }
+            .cg-tool { border-left: none; padding-left: 0; margin-top: 0.25rem; }
+        }
+
+        /* Five Cants */
+        .five-cants {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .cant-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 40px 1fr;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .cant-row:last-child { border-bottom: none; }
+        .cant-row:hover { background: var(--surface-2); }
+
+        .cant-num {
+            font-size: 1.4rem;
+            font-weight: 800;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .cant-num.c1 { background: var(--primary); color: #fff; }
+        .cant-num.c2 { background: var(--pink); color: #fff; }
+        .cant-num.c3 { background: var(--accent); color: #000; }
+        .cant-num.c4 { background: var(--cyan); color: #000; }
+        .cant-num.c5 { background: var(--secondary); color: #fff; }
+
+        .cant-problem {
+            font-size: 0.95rem;
+            color: var(--danger-light);
+            font-weight: 600;
+        }
+
+        .cant-arrow {
+            font-size: 1.2rem;
+            color: var(--accent-light);
+            text-align: center;
+        }
+
+        .cant-solution {
+            font-size: 0.95rem;
+        }
+
+        .cant-solution .tool-label {
+            color: var(--secondary-light);
+            font-weight: 700;
+        }
+
+        .cant-solution .tool-detail {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .cant-row {
+                grid-template-columns: 40px 1fr;
+                gap: 0.5rem;
+            }
+            .cant-arrow { display: none; }
+        }
+
+        /* Mermaid diagrams */
+        .mermaid-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        li { margin-bottom: 0.3rem; }
+
+        /* Key findings */
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .finding-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+        }
+
+        .finding-card .finding-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-light);
+        }
+
+        .finding-card p {
+            font-size: 0.88rem;
+            color: var(--text-dim);
+            margin-bottom: 0;
+        }
+
+        /* Links */
+        a { color: var(--info-light); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .toc h3 {
+            color: var(--primary-light);
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .toc ol {
+            columns: 2;
+            column-gap: 2rem;
+        }
+
+        .toc li {
+            margin-bottom: 0.35rem;
+            font-size: 0.9rem;
+        }
+
+        .toc a {
+            color: var(--text);
+            transition: color 0.2s;
+        }
+
+        .toc a:hover { color: var(--primary-light); }
+
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.6rem; }
+            .taxonomy-grid { grid-template-columns: 1fr; }
+            .findings-grid { grid-template-columns: 1fr; }
+            .toc ol { columns: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Agentic Long Video Understanding: A Tools Survey</h1>
+            <p class="subtitle">What tools do current agentic pipelines use, what abilities do they provide, and why are they specific to long videos?</p>
+            <div class="meta">
+                <span>20+ Systems Surveyed</span>
+                <span>2023 &ndash; 2026</span>
+                <span>10 Tool Categories</span>
+            </div>
+        </header>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ol>
+                <li><a href="#taxonomy">Unified Tool Taxonomy</a></li>
+                <li><a href="#why-long">Why Long Videos Need Tools</a></li>
+                <li><a href="#systems">Per-System Detailed Breakdown</a></li>
+                <li><a href="#summary-table">Complete Summary Table</a></li>
+                <li><a href="#key-findings">Key Empirical Findings</a></li>
+                <li><a href="#cross-cutting">Cross-Cutting Themes</a></li>
+                <li><a href="#sources">Sources &amp; References</a></li>
+            </ol>
+        </div>
+
+        <!-- ==================== SECTION 1: TAXONOMY ==================== -->
+        <section class="section" id="taxonomy">
+            <h2>1. Unified Tool Taxonomy</h2>
+            <p>Across 20+ systems, tools converge into <strong>10 categories</strong>, even though each system names them differently. Every tool exists to compensate for one specific aspect of why long videos break the "see everything at once" paradigm.</p>
+
+            <div class="taxonomy-grid">
+                <div class="taxonomy-card t1">
+                    <div class="taxonomy-num">Tool #1</div>
+                    <div class="taxonomy-title">Temporal Clipping / Scoping</div>
+                    <div class="taxonomy-systems">VITAL <code>video_clip()</code> &bull; DVD Global Browse &bull; VideoARM Temporal Scoping &bull; HAVEN <code>T_scene</code></div>
+                    <div class="taxonomy-desc">Narrows the agent's attention to a specific time range and densely samples frames from that segment.</div>
+                    <div class="taxonomy-why">Why long-video: A 1-hour video at 1fps = 3,600 frames. No MLLM can process all of them at once. This tool lets the agent zoom in on-demand.</div>
+                </div>
+
+                <div class="taxonomy-card t2">
+                    <div class="taxonomy-num">Tool #2</div>
+                    <div class="taxonomy-title">Visual Semantic Search</div>
+                    <div class="taxonomy-systems">EGAgent Visual Search &bull; HAVEN <code>T_visual</code> &bull; LongShOTAgent SigLIP &bull; AVI Retrieve Tools &bull; VideoAgent CLIP Retrieval</div>
+                    <div class="taxonomy-desc">Embeds frames using a vision encoder (SigLIP, CLIP, UNITE) and performs cosine-similarity retrieval against a query embedding.</div>
+                    <div class="taxonomy-why">Why long-video: Needle-in-a-haystack search over thousands of frames. Like CTRL+F for visual content across the entire timeline.</div>
+                </div>
+
+                <div class="taxonomy-card t3">
+                    <div class="taxonomy-num">Tool #3</div>
+                    <div class="taxonomy-title">ASR / Speech Transcript Search</div>
+                    <div class="taxonomy-systems">Whisper-large-v3 &bull; WhisperX (with diarization) &bull; EGAgent Transcript Search &bull; LongShOTAgent &bull; HAVEN &bull; Video-RAG</div>
+                    <div class="taxonomy-desc">Timestamped speech transcription, speaker diarization (who said what, when), and keyword/semantic search over dialogue.</div>
+                    <div class="taxonomy-why">Why long-video: Hours of dialogue carry critical information invisible in frames. Speaker diarization tracks entities by voice even when visual appearance changes. HAVEN showed -9.3% accuracy without audio.</div>
+                </div>
+
+                <div class="taxonomy-card t4">
+                    <div class="taxonomy-num">Tool #4</div>
+                    <div class="taxonomy-title">Entity / Scene Graph Search</div>
+                    <div class="taxonomy-systems">EGAgent SQL queries &bull; HAVEN <code>T_entity</code> &bull; AVI Entity Graph KB &bull; SceneRAG Knowledge Graph</div>
+                    <div class="taxonomy-desc">Structured graph: nodes = people/objects/locations, edges = temporally-annotated relationships. Supports SQL-like queries.</div>
+                    <div class="taxonomy-why">Why long-video: The most uniquely long-video tool. Enables multi-hop relational reasoning ("Who did X talk to before meeting Y?"). EGAgent: +32% on RelationMap tasks.</div>
+                </div>
+
+                <div class="taxonomy-card t5">
+                    <div class="taxonomy-num">Tool #5</div>
+                    <div class="taxonomy-title">Fine-Grained Inspection / Perception</div>
+                    <div class="taxonomy-systems">HAVEN <code>T_inspect</code> &bull; VideoARM Understanding Tools &bull; DVD Frame Inspect &bull; AVI Perceive Tools &bull; ViperGPT modules &bull; VideoAgent2 Zoom+Caption</div>
+                    <div class="taxonomy-desc">Detailed visual analysis on retrieved segments: object detection, spatial reasoning, attribute extraction, depth estimation.</div>
+                    <div class="taxonomy-why">Why long-video: Creates a coarse-to-fine pipeline. Cheap retrieval finds the right 10-second window; expensive perception is applied only there.</div>
+                </div>
+
+                <div class="taxonomy-card t6">
+                    <div class="taxonomy-num">Tool #6</div>
+                    <div class="taxonomy-title">OCR (On-Screen Text Extraction)</div>
+                    <div class="taxonomy-systems">LongShOTAgent PaddleOCR &bull; AVI Perceive Tools &bull; Video-RAG &bull; AssistGPT</div>
+                    <div class="taxonomy-desc">Extracts on-screen text: subtitles, signs, UI elements, documents shown in video.</div>
+                    <div class="taxonomy-why">Why long-video: Long-form content (lectures, tutorials, documentaries) display text that changes over time. Neither visual embedding nor ASR can capture it.</div>
+                </div>
+
+                <div class="taxonomy-card t7">
+                    <div class="taxonomy-num">Tool #7</div>
+                    <div class="taxonomy-title">Audio Event Detection</div>
+                    <div class="taxonomy-systems">LongShOTAgent Audio-Flamingo-3</div>
+                    <div class="taxonomy-desc">Detects non-speech sounds: music, applause, explosions, alarms, environmental sounds.</div>
+                    <div class="taxonomy-why">Why long-video: Ambient audio provides temporal anchors (e.g., "the scene after the crash sound"). LongShOTBench revealed this modality is systematically underutilized.</div>
+                </div>
+
+                <div class="taxonomy-card t8">
+                    <div class="taxonomy-num">Tool #8</div>
+                    <div class="taxonomy-title">Working Memory / Memory Bank</div>
+                    <div class="taxonomy-systems">VideoARM HM3 &bull; MA-LMM Memory Bank &bull; EGAgent Working Memory &bull; HAVEN Context Memory &bull; VideoAgent Object Memory &bull; MovieChat Long-term Memory</div>
+                    <div class="taxonomy-desc">Stores and compresses intermediate findings across reasoning steps. MA-LMM clusters similar frames; VideoARM builds multi-level hierarchies.</div>
+                    <div class="taxonomy-why">Why long-video: The core architectural innovation. Evidence from minute 5 must persist when the agent reaches minute 45. MA-LMM maintains constant memory regardless of video length.</div>
+                </div>
+
+                <div class="taxonomy-card t9">
+                    <div class="taxonomy-num">Tool #9</div>
+                    <div class="taxonomy-title">Web Search / External Knowledge</div>
+                    <div class="taxonomy-systems">VideoDR benchmark &bull; LongShOTAgent Web Search</div>
+                    <div class="taxonomy-desc">Retrieves external knowledge from the web for questions requiring world knowledge beyond the video.</div>
+                    <div class="taxonomy-why">Why long-video: Long-form content references real-world entities and events. However, VideoDR warns of goal drift: web noise degrades video anchors through cascading errors.</div>
+                </div>
+
+                <div class="taxonomy-card t10">
+                    <div class="taxonomy-num">Tool #10</div>
+                    <div class="taxonomy-title">Planning / Query Decomposition</div>
+                    <div class="taxonomy-systems">EGAgent Planning Agent &bull; LongShOTAgent Qwen3-4B Orchestrator &bull; VideoARM Observe-Think-Act-Memorize &bull; AVI Retrieve-Perceive-Review &bull; LongVideoAgent Master LLM</div>
+                    <div class="taxonomy-desc">Decomposes complex queries into sub-tasks, selects tools at each step, decides when to stop.</div>
+                    <div class="taxonomy-why">Why long-video: Short video questions are single-hop. Long video questions require multi-hop temporal reasoning across different regions of the timeline.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION 2: WHY LONG ==================== -->
+        <section class="section" id="why-long">
+            <h2>2. Why Long Videos Specifically Need Tools</h2>
+            <p>The fundamental insight: <strong>long videos break the "see everything at once" paradigm</strong>. Every tool compensates for one aspect of this limitation.</p>
+
+            <div class="comparison-grid">
+                <div class="cg-header">
+                    <span>Short Video (&lt;1 min)</span>
+                    <span class="cg-mid"></span>
+                    <span>Long Video (30 min &ndash; 50 hrs)</span>
+                    <span>Solution</span>
+                </div>
+                <div class="cg-row">
+                    <div class="cg-short">Feed all frames at once</div>
+                    <div class="cg-arrow">&rarr;</div>
+                    <div class="cg-long">Context window overflow</div>
+                    <div class="cg-tool">Temporal Clip + Visual Search</div>
+                </div>
+                <div class="cg-row">
+                    <div class="cg-short">Single-pass perception on everything</div>
+                    <div class="cg-arrow">&rarr;</div>
+                    <div class="cg-long">100K+ frames too expensive</div>
+                    <div class="cg-tool">Coarse Retrieve, then Fine Inspect</div>
+                </div>
+                <div class="cg-row">
+                    <div class="cg-short">Track entities visually</div>
+                    <div class="cg-arrow">&rarr;</div>
+                    <div class="cg-long">Same person, different scenes/outfits</div>
+                    <div class="cg-tool">Entity Graph + Speaker Diarization</div>
+                </div>
+                <div class="cg-row">
+                    <div class="cg-short">One reasoning step</div>
+                    <div class="cg-arrow">&rarr;</div>
+                    <div class="cg-long">Multi-hop across timeline</div>
+                    <div class="cg-tool">Planner + Working Memory</div>
+                </div>
+                <div class="cg-row">
+                    <div class="cg-short">Vision-only sufficient</div>
+                    <div class="cg-arrow">&rarr;</div>
+                    <div class="cg-long">Speech, text, ambient audio all carry signal</div>
+                    <div class="cg-tool">ASR + OCR + Audio Detection</div>
+                </div>
+            </div>
+
+            <h3>The 5 Fundamental Constraints of Long Video</h3>
+            <p>Every tool in these pipelines exists because long videos introduce one of these five constraints that short videos don't have:</p>
+
+            <div class="five-cants">
+                <div class="cant-row">
+                    <div class="cant-num c1">1</div>
+                    <div class="cant-problem">Can't see all frames</div>
+                    <div class="cant-arrow">&rarr;</div>
+                    <div class="cant-solution">
+                        <div class="tool-label">Temporal Clipping + Visual Search</div>
+                        <div class="tool-detail">A 1-hr video = 3,600 frames at 1fps. Context windows and GPU memory overflow. The agent must selectively zoom into relevant temporal windows on-demand, not process everything at once.</div>
+                    </div>
+                </div>
+                <div class="cant-row">
+                    <div class="cant-num c2">2</div>
+                    <div class="cant-problem">Can't remember everything</div>
+                    <div class="cant-arrow">&rarr;</div>
+                    <div class="cant-solution">
+                        <div class="tool-label">Working Memory + Entity Graphs</div>
+                        <div class="tool-detail">Evidence found at minute 5 must persist when the agent reaches minute 45. Entities (people, objects, locations) appear, disappear, and reappear across hours &mdash; need persistent structured storage with temporal annotations.</div>
+                    </div>
+                </div>
+                <div class="cant-row">
+                    <div class="cant-num c3">3</div>
+                    <div class="cant-problem">Can't reason in one step</div>
+                    <div class="cant-arrow">&rarr;</div>
+                    <div class="cant-solution">
+                        <div class="tool-label">Planning Agent + Multi-hop Decomposition</div>
+                        <div class="tool-detail">Short video questions are single-hop ("What color is the car?"). Long video questions require multi-hop temporal reasoning ("What did X do after leaving the meeting but before arriving home?") &mdash; demanding ordered sub-goals across different temporal regions.</div>
+                    </div>
+                </div>
+                <div class="cant-row">
+                    <div class="cant-num c4">4</div>
+                    <div class="cant-problem">Can't afford full perception everywhere</div>
+                    <div class="cant-arrow">&rarr;</div>
+                    <div class="cant-solution">
+                        <div class="tool-label">Coarse Retrieve, then Fine Inspect</div>
+                        <div class="tool-detail">In short videos, perception is the default &mdash; run VLM on all frames. In long videos, perception becomes a <strong>gated, selectively-invoked tool</strong>: cheap retrieval finds the right 10-second window first, then expensive VLM analysis is applied only there.</div>
+                    </div>
+                </div>
+                <div class="cant-row">
+                    <div class="cant-num c5">5</div>
+                    <div class="cant-problem">Can't rely on vision alone</div>
+                    <div class="cant-arrow">&rarr;</div>
+                    <div class="cant-solution">
+                        <div class="tool-label">ASR + OCR + Audio Event Detection</div>
+                        <div class="tool-detail">Long-form content carries hours of speech, on-screen text, and ambient sounds. Each modality provides unique temporal anchors and information invisible to vision alone. HAVEN: removing audio = -9.3% accuracy.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight highlight-insight">
+                <strong>The Core Insight</strong>
+                <p>Long videos break the "see everything at once" paradigm. Every tool in these agentic pipelines exists to compensate for one of these five constraints &mdash; much like how humans watch long content by remembering key moments and fast-forwarding through the rest, rather than attending to every frame equally.</p>
+            </div>
+
+            <div class="mermaid-wrapper">
+                <pre class="mermaid">
+flowchart TD
+    Q["User Query"] --> P["Planning Agent<br/>(Decompose into sub-tasks)"]
+    P --> R["Retrieval Layer"]
+    R --> VS["Visual Search<br/>(SigLIP/CLIP embeddings)"]
+    R --> AS["ASR Search<br/>(Whisper transcripts)"]
+    R --> EG["Entity Graph<br/>(SQL over relationships)"]
+    R --> WS["Web Search<br/>(External knowledge)"]
+
+    VS --> I["Inspection Layer"]
+    AS --> I
+    EG --> I
+
+    I --> FI["Frame Inspect<br/>(VLM detailed analysis)"]
+    I --> OCR["OCR<br/>(On-screen text)"]
+    I --> AD["Audio Detection<br/>(Non-speech sounds)"]
+
+    FI --> M["Working Memory<br/>(Accumulate evidence)"]
+    OCR --> M
+    AD --> M
+    WS --> M
+
+    M --> D{"Sufficient<br/>Evidence?"}
+    D -->|No| P
+    D -->|Yes| A["Final Answer"]
+
+    style Q fill:#6366f1,color:#fff,stroke:none
+    style P fill:#3b82f6,color:#fff,stroke:none
+    style R fill:#222240,color:#e2e8f0,stroke:#2d2d50
+    style VS fill:#10b981,color:#fff,stroke:none
+    style AS fill:#10b981,color:#fff,stroke:none
+    style EG fill:#10b981,color:#fff,stroke:none
+    style WS fill:#f59e0b,color:#000,stroke:none
+    style I fill:#222240,color:#e2e8f0,stroke:#2d2d50
+    style FI fill:#06b6d4,color:#fff,stroke:none
+    style OCR fill:#06b6d4,color:#fff,stroke:none
+    style AD fill:#06b6d4,color:#fff,stroke:none
+    style M fill:#ec4899,color:#fff,stroke:none
+    style D fill:#222240,color:#e2e8f0,stroke:#6366f1
+    style A fill:#10b981,color:#fff,stroke:none
+                </pre>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION 3: PER-SYSTEM ==================== -->
+        <section class="section" id="systems">
+            <h2>3. Per-System Detailed Breakdown</h2>
+
+            <!-- ViperGPT -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">ViperGPT</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">ICCV 2023</span>
+                        <span class="badge badge-programmatic">Programmatic</span>
+                    </div>
+                </div>
+                <div class="card-description">Visual Inference via Python Execution for Reasoning. The LLM generates Python programs composing vision modules. Foundational work influencing all subsequent tool-augmented video systems.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">find(image, query)</td><td>Open-vocabulary object detection</td><td>Locates objects mentioned in queries across frames</td></tr>
+                        <tr><td class="tool-name">exists(image, query)</td><td>Checks if a queried object exists</td><td>Quick existence check without full detection</td></tr>
+                        <tr><td class="tool-name">verify_property(image, noun, attr)</td><td>Checks if an object has a specific attribute</td><td>Attribute verification for compositional questions</td></tr>
+                        <tr><td class="tool-name">best_image_match(patches, query)</td><td>CLIP-based best patch selection</td><td>Selects most relevant object among candidates</td></tr>
+                        <tr><td class="tool-name">best_text_match(texts, image)</td><td>CLIP-based image-to-text matching</td><td>Classifies/identifies visual content</td></tr>
+                        <tr><td class="tool-name">compute_depth(image)</td><td>Computes median depth via MiDaS</td><td>Spatial reasoning about distances</td></tr>
+                        <tr><td class="tool-name">distance(patch1, patch2)</td><td>Pixel distance between patches</td><td>Spatial relationship reasoning</td></tr>
+                        <tr><td class="tool-name">simple_query(image, query)</td><td>Non-decomposable VQA via captioning</td><td>Fallback for atomic questions</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2303.08128">arXiv:2303.08128</a> &bull; Code: <a href="https://github.com/cvlab-columbia/viper">GitHub</a></div>
+            </div>
+
+            <!-- AssistGPT -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">AssistGPT</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">2023</span>
+                        <span class="badge badge-agentic">Agentic (PEIL)</span>
+                    </div>
+                </div>
+                <div class="card-description">Plan-Execute-Inspect-Learn loop. The Inspector manages non-textual intermediate results; the Learner records successful traces as in-context examples for future use.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Image Detection</td><td>Detects objects in frames</td><td>Identifies visual elements across video</td></tr>
+                        <tr><td class="tool-name">Image Captioning</td><td>Generates textual descriptions</td><td>Creates searchable text representations</td></tr>
+                        <tr><td class="tool-name">Region Grounding</td><td>Localizes regions from text query</td><td>Handles spatial questions</td></tr>
+                        <tr><td class="tool-name">Temporal Grounding</td><td>Locates relevant segments from text</td><td>Core: finds the right moment without scanning everything</td></tr>
+                        <tr><td class="tool-name">OCR</td><td>Extracts on-screen text</td><td>Reads text in lecture/tutorial/UI videos</td></tr>
+                        <tr><td class="tool-name">Object Enumeration</td><td>Counts objects in a frame</td><td>Quantitative questions</td></tr>
+                        <tr><td class="tool-name">Speech-to-Text</td><td>Converts audio to text</td><td>Extracts dialogue for reasoning</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2306.08640">arXiv:2306.08640</a></div>
+            </div>
+
+            <!-- VideoAgent (Wang) -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VideoAgent (Wang et al.)</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">ECCV 2024</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">LLM as decision-making agent. Formulates video understanding as a state-action-observation process. Uses only ~8.4 frames on average (2x-30x fewer than competitors).</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">CLIP Frame Retrieval</td><td>Retrieves most relevant frames via image-text similarity</td><td>CLIP retrieval is &lt;1% the cost of VLM inference over massive frame pools</td></tr>
+                        <tr><td class="tool-name">VLM Captioning/QA</td><td>BLIP-2 describes or answers questions on selected frames</td><td>Detailed understanding on few relevant frames only</td></tr>
+                        <tr><td class="tool-name">Continue/Answer Decision</td><td>LLM decides: search more or answer now?</td><td>Iterative approach means only ~8.4 frames used on average</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2403.10517">arXiv:2403.10517</a></div>
+            </div>
+
+            <!-- VideoAgent (Fan) -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VideoAgent (Fan et al.)</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">ECCV 2024</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                        <span class="badge badge-memory">Memory-Aug</span>
+                    </div>
+                </div>
+                <div class="card-description">Memory-augmented multimodal agent with temporal event descriptions and object-centric tracking. +6.6% on NExT-QA, +26.0% on EgoSchema.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Segment Localization</td><td>Retrieves relevant 2-sec segments via query-memory similarity</td><td>Relevant moment may be seconds out of hours</td></tr>
+                        <tr><td class="tool-name">Visual QA</td><td>Video-LLM describes and answers questions on short clips</td><td>Focused analysis of located segments</td></tr>
+                        <tr><td class="tool-name">Object Memory Query (SQL)</td><td>SQL database with object categories, CLIP features, timestamps</td><td>Tracks identity across temporal gaps via re-identification</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2403.11481">arXiv:2403.11481</a></div>
+            </div>
+
+            <!-- ProViQ -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">ProViQ</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">ECCV 2024</span>
+                        <span class="badge badge-programmatic">Programmatic</span>
+                    </div>
+                </div>
+                <div class="card-description">Procedural Video QA. Generates programs that compose visual modules for step-by-step procedural understanding.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">GroundingDINO</td><td>Open-vocabulary object detection</td><td>Finds specific objects across many frames</td></tr>
+                        <tr><td class="tool-name">BLIP-2</td><td>Image captioning and visual QA</td><td>Describes frames and answers atomic questions</td></tr>
+                        <tr><td class="tool-name">ByteTrack</td><td>Multi-object tracking across frames</td><td>Tracks identity across temporal spans &mdash; critical for long videos</td></tr>
+                        <tr><td class="tool-name">LaViLa</td><td>Video-to-language narration</td><td>Textual summaries of segments for LLM reasoning</td></tr>
+                        <tr><td class="tool-name">Summarization Module</td><td>LaViLa captions + LLM summarization</td><td>Compresses long videos into digestible text</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2312.00937">arXiv:2312.00937</a></div>
+            </div>
+
+            <!-- MoReVQA -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">MoReVQA</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">CVPR 2024</span>
+                        <span class="badge badge-programmatic">Programmatic</span>
+                    </div>
+                </div>
+                <div class="card-description">Modular Reasoning for Video QA. Three-stage decomposition (Parse &rarr; Ground &rarr; Reason) prevents combinatorial explosion on long videos.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Stage</th><th>Module</th><th>What It Does</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Event Parsing</td><td>LLM-generated program</td><td>Decomposes question into events/entities to search for</td></tr>
+                        <tr><td class="tool-name">Grounding</td><td>Visual grounding modules</td><td>Locates relevant segments based on parsed events</td></tr>
+                        <tr><td class="tool-name">Reasoning</td><td>Reasoning modules + shared memory</td><td>Analyzes grounded events and relationships for final answer</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2404.06511">arXiv:2404.06511</a></div>
+            </div>
+
+            <!-- MA-LMM -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">MA-LMM</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">CVPR 2024</span>
+                        <span class="badge badge-memory">Memory-Based</span>
+                        <span class="badge badge-trained">Trained</span>
+                    </div>
+                </div>
+                <div class="card-description">Memory-Augmented Large Multimodal Model. Processes video online and stores past info in a memory bank. Plug-and-play module for existing MLLMs like InstructBLIP.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Mechanism</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Online Processing</td><td>Takes frames sequentially instead of all at once</td><td>Avoids GPU memory overflow on long sequences</td></tr>
+                        <tr><td class="tool-name">Long-term Memory Bank</td><td>Compressed token storage of past frames</td><td>Constant memory regardless of video length</td></tr>
+                        <tr><td class="tool-name">Memory Compression</td><td>Selects/averages most similar adjacent frame features</td><td>Reduces redundancy; groups semantically similar content</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2404.05726">arXiv:2404.05726</a> &bull; Code: <a href="https://github.com/boheumd/MA-LMM">GitHub</a></div>
+            </div>
+
+            <!-- MovieChat -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">MovieChat</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">CVPR 2024</span>
+                        <span class="badge badge-memory">Memory-Based</span>
+                        <span class="badge badge-trained">Trained</span>
+                    </div>
+                </div>
+                <div class="card-description">Dense Token to Sparse Memory. Processes 10K+ frames on 24GB GPU (21.3 KB/frame vs ~200 MB/frame for competitors).</div>
+                <table class="tool-table">
+                    <thead><tr><th>Mechanism</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Short-term Memory</td><td>Fixed-length sliding window of recent frame tokens</td><td>Maintains current context</td></tr>
+                        <tr><td class="tool-name">Long-term Memory</td><td>Compressed storage via temporal merging</td><td>Enables 10K+ frame processing on consumer GPU</td></tr>
+                        <tr><td class="tool-name">Breakpoint Mode</td><td>Understands a specific moment</td><td>Targeted temporal queries</td></tr>
+                        <tr><td class="tool-name">Global Mode</td><td>Comprehends entire video holistically</td><td>Questions requiring full-video context</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2307.16449">arXiv:2307.16449</a> &bull; Code: <a href="https://github.com/rese1f/MovieChat">GitHub</a></div>
+            </div>
+
+            <!-- LLoVi -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">LLoVi</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">EMNLP 2024</span>
+                        <span class="badge badge-pipeline">Pipeline</span>
+                    </div>
+                </div>
+                <div class="card-description">Simple LLM Framework for Long-Range Video QA. Established the caption-then-reason paradigm that many agentic systems build upon. Multi-round summarization adds +9.4% accuracy.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Short-clip Captioner (LaViLa)</td><td>Densely extracts captions from 1-second clips</td><td>Converts visual content to searchable text at scale</td></tr>
+                        <tr><td class="tool-name">LLM Summarizer</td><td>Multi-round summarization of noisy captions</td><td>Hundreds of captions need compression for LLM digestion</td></tr>
+                        <tr><td class="tool-name">Temporal Grounding</td><td>Localizes answer-relevant temporal windows</td><td>Identifies when in the video the evidence appears</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2312.17235">arXiv:2312.17235</a> &bull; Code: <a href="https://github.com/CeeZh/LLoVi">GitHub</a></div>
+            </div>
+
+            <!-- DVD -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">DVD &mdash; Deep Video Discovery</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">NeurIPS 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Microsoft. Two-phase: offline database construction (3 granularity levels) + online agentic search. 74.2% on LVBench (SOTA at publication), +13.4 points over previous best.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Global Browse</td><td>High-level topic summary of entire video</td><td>Orientation before diving into detail in hour-long videos</td></tr>
+                        <tr><td class="tool-name">Clip Search</td><td>Semantic search over segments (top-k adjustable)</td><td>Needle-in-haystack without exhaustive scanning</td></tr>
+                        <tr><td class="tool-name">Frame Inspect</td><td>VLM-based visual QA on specific frames</td><td>Pixel-level analysis after coarse localization</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2505.18079">arXiv:2505.18079</a> &bull; Code: <a href="https://github.com/microsoft/DeepVideoDiscovery">GitHub</a></div>
+            </div>
+
+            <!-- VideoAgent2 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VideoAgent2</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">NeurIPS 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Uncertainty-Aware CoT. Key innovation: per-sentence confidence scoring on tool outputs. Agent assesses whether info exceeds a confidence threshold before answering.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Image Caption + Confidence</td><td>GPT-4o captions with per-sentence confidence 0-1</td><td>Confidence scores assess reliability across many segments</td></tr>
+                        <tr><td class="tool-name">Object Detection</td><td>SAM2 + YOLOv11 with bounding boxes and confidence</td><td>Counting and tracking objects across temporal spans</td></tr>
+                        <tr><td class="tool-name">Image Zoom + Caption</td><td>OpenCV zoom + caption for subregions</td><td>Fine-grained detail recovery (text on signs, small objects)</td></tr>
+                        <tr><td class="tool-name">Image Zoom + Detection</td><td>Object detection on zoomed subregions</td><td>Spatial detail for distant or small objects</td></tr>
+                        <tr><td class="tool-name">Video Pre-processor</td><td>Downsamples video, per-segment captions via LaViLa</td><td>Converts long video to manageable text summary</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2504.04471">arXiv:2504.04471</a></div>
+            </div>
+
+            <!-- VITAL -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VITAL</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Aug 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                        <span class="badge badge-trained">SFT+RL</span>
+                    </div>
+                </div>
+                <div class="card-description">Video Intelligence via Tool-Augmented Learning. Tsinghua/ByteDance. End-to-end RL training (DGRPO) teaches when to call tools during CoT. Only 1 effective tool &mdash; caption and QA tools hurt.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">video_clip(t_start, t_end)</td><td>Densely samples frames from specified time range</td><td>Active evidence requesting from specific moments; sparse uniform sampling misses critical frames</td></tr>
+                    </tbody>
+                </table>
+                <div class="highlight highlight-warning">
+                    <strong>Key Finding:</strong>
+                    <p>Only the video clipping tool is effective. Clip captioning and clip QA tools add noise and <strong>hurt</strong> performance. +9.1% accuracy on long video tasks. SOTA on NExT-GQA, ReXTime, Charades-STA, ActivityNet-MR.</p>
+                </div>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2508.04416">arXiv:2508.04416</a></div>
+            </div>
+
+            <!-- LongShOTAgent -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">LongShOTAgent</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">NeurIPS 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">MBZUAI. The most tool-rich system (11+ modules). First omni-modal framework integrating vision, speech, and ambient audio. Qwen3-4B orchestrator. Training-free, fully modular. 44.66% on LongShOTBench.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Scene-based Frame Sampler</td><td>Keyframe extraction via scene detection</td><td>Variable event density; captures transitions uniform sampling misses</td></tr>
+                        <tr><td class="tool-name">Whisper-small (Preprocessor)</td><td>Lightweight ASR for initial indexing</td><td>Extracts dialogue for indexing at low cost</td></tr>
+                        <tr><td class="tool-name">SigLIP Visual Embeddings</td><td>Per-frame embeddings for vector DB</td><td>Enables fast semantic search over thousands of frames</td></tr>
+                        <tr><td class="tool-name">PaddleOCR</td><td>On-screen text extraction</td><td>Captures textual info that vision models miss</td></tr>
+                        <tr><td class="tool-name">Audio Analysis</td><td>Background/non-speech sound analysis</td><td>Environmental audio cues help locate events</td></tr>
+                        <tr><td class="tool-name">Vector DB Search</td><td>Semantic similarity search, top-k retrieval</td><td>Core retrieval making long video QA tractable</td></tr>
+                        <tr><td class="tool-name">Whisper-large-v3 (Refiner)</td><td>High-quality ASR on selected segments</td><td>Accurate dialogue for answer generation</td></tr>
+                        <tr><td class="tool-name">Audio-Flamingo-3 (Refiner)</td><td>Detailed audio understanding</td><td>Speaker identification, tone, sound classification</td></tr>
+                        <tr><td class="tool-name">Video Refiner (Qwen2.5-VL-7B)</td><td>Dense caption generation for segments</td><td>Detailed visual descriptions when initial captions insufficient</td></tr>
+                        <tr><td class="tool-name">Activity Detection</td><td>Action classification in segments</td><td>Identifies specific actions in instructional/surveillance videos</td></tr>
+                        <tr><td class="tool-name">Web Search</td><td>External knowledge retrieval</td><td>References to real-world entities require factual lookup</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2512.16978">arXiv:2512.16978</a> &bull; Code: <a href="https://github.com/mbzuai-oryx/longshot">GitHub</a></div>
+            </div>
+
+            <!-- AVI -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">AVI &mdash; Agentic Video Intelligence</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Nov 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Three-phase Retrieve-Perceive-Review reasoning. Entirely open-source, training-free. Surpasses OpenAI o3 on several long video benchmarks.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool Suite</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Retrieve Tools</td><td>Global exploration + segment localization via text abstractions</td><td>Narrows search space from hours to seconds</td></tr>
+                        <tr><td class="tool-name">Perceive Tools</td><td>Base CV models + VLM for direct visual analysis</td><td>Pixel-level evidence after temporal localization</td></tr>
+                        <tr><td class="tool-name">Review Phase</td><td>Reflection and decide: output or loop back</td><td>Self-correcting loop ensures quality with distributed evidence</td></tr>
+                        <tr><td class="tool-name">Entity Graph KB</td><td>Structured entity graph for relationship queries</td><td>Multi-hop reasoning across scenes and events</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2511.14446">arXiv:2511.14446</a></div>
+            </div>
+
+            <!-- VideoARM -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VideoARM</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Dec 2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Agentic Reasoning over Hierarchical Memory. Observe-Think-Act-Memorize loop. Replaces static preprocessing (DVD) with adaptive on-the-fly reasoning, cutting token consumption significantly.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool Category</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Temporal Scoping Tools</td><td>Limit agent's attention to query-aligned segments</td><td>Reduces token consumption by ignoring irrelevant portions</td></tr>
+                        <tr><td class="tool-name">Multimodal Understanding Tools</td><td>Localize, interpret, abstract evidence at multiple levels</td><td>Coarse-to-fine: broad exploration, then micro-event analysis</td></tr>
+                        <tr><td class="tool-name">Hierarchical Multimodal Memory (HM3)</td><td>Dynamically constructed multi-level memory during execution</td><td>Evolving context that persists across long reasoning chains</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2512.12360">arXiv:2512.12360</a></div>
+            </div>
+
+            <!-- VideoExplorer -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">VideoExplorer</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                        <span class="badge badge-trained">SFT+DPO</span>
+                    </div>
+                </div>
+                <div class="card-description">"Thinking with Video." Iteratively formulates sub-questions, locates moments, and perceives. Two-stage training: supervised trajectory initialization + trajectory-level preference optimization.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Task-oriented Planner</td><td>Decomposes complex questions into sub-tasks</td><td>Multi-step reasoning for questions spanning multiple events</td></tr>
+                        <tr><td class="tool-name">Temporal Grounding Agent</td><td>Constructs queries, retrieves candidates, verifies relevance</td><td>Precisely locating moments in hour-long videos</td></tr>
+                        <tr><td class="tool-name">Visual Perceiver</td><td>Qwen2.5VL-7B processing up to 32 frames per sub-task</td><td>Scalable perception adapts token budget to task complexity</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2506.10821">arXiv:2506.10821</a></div>
+            </div>
+
+            <!-- HAVEN -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">HAVEN</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Jan 2026</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Hierarchical Audiovisual Entity Cohesion + Agentic Search. USTC / Microsoft Research Asia. 84.1% on LVBench (SOTA). 4-level hierarchical indexing with audiovisual entity tracking.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">T_scene (Scene Browse)</td><td>Coarse scene localization on timeline</td><td>Orientation in multi-scene long videos</td></tr>
+                        <tr><td class="tool-name">T_caption (Caption Search)</td><td>Fine-grained text retrieval via caption embeddings</td><td>Text-based needle-in-haystack search</td></tr>
+                        <tr><td class="tool-name">T_visual (Visual Search)</td><td>Cross-modal retrieval using UNITE embeddings</td><td>Visual similarity search when text descriptions insufficient</td></tr>
+                        <tr><td class="tool-name">T_entity (Entity Search)</td><td>Entity-centric retrieval with two-stage reranking</td><td>Tracks characters across scenes despite appearance changes</td></tr>
+                        <tr><td class="tool-name">T_inspect (Inspection)</td><td>Clip caption inspect + visual inspect sub-tools</td><td>Fine-grained temporal analysis after coarse localization</td></tr>
+                        <tr><td class="tool-name">WhisperX Diarization</td><td>Speaker diarization for consistent identity tracking</td><td>Same voice = same entity even with visual appearance changes</td></tr>
+                        <tr><td class="tool-name">Context Memory</td><td>Accumulates tool outputs; global summary as context</td><td>Persistent evidence across 10-step reasoning depth</td></tr>
+                    </tbody>
+                </table>
+                <div class="highlight highlight-success">
+                    <strong>Ablation Results:</strong>
+                    <p>Removing hierarchical indexing: 81.0% &rarr; 72.8% (-8.2%). Removing audio: 81.0% &rarr; 71.7% (-9.3%). All components contribute significantly.</p>
+                </div>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2601.13719">arXiv:2601.13719</a></div>
+            </div>
+
+            <!-- EGAgent -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">EGAgent</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Jan 2026</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                    </div>
+                </div>
+                <div class="card-description">Meta Reality Labs. Entity scene graph for very long video (up to 50 hours / week-long egocentric). 57.5% on EgoLifeQA (SOTA, +20.6% over previous best). Runs 2-3 min per question.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Planning Agent</td><td>Decomposes query into N sub-tasks with tool assignments</td><td>Multi-hop reasoning across days/weeks of video</td></tr>
+                        <tr><td class="tool-name">Visual Search Tool</td><td>1FPS frame embeddings, cosine similarity + attribute filters</td><td>Sub-second retrieval over millions of frames</td></tr>
+                        <tr><td class="tool-name">Audio Transcript Search</td><td>LLM-based or BM25 search over diarized transcripts</td><td>Hours of dialogue pinpointed without re-processing audio</td></tr>
+                        <tr><td class="tool-name">Entity Graph Search (SQL)</td><td>SQL over entity graph: strict-to-relaxed query strategy</td><td>Multi-hop relational reasoning across days (+32% on RelationMap)</td></tr>
+                        <tr><td class="tool-name">Analyzer Tool</td><td>LLM-based filtering, reasoning, de-duplication</td><td>Aggregates evidence from multiple search rounds</td></tr>
+                        <tr><td class="tool-name">VQA Agent</td><td>Final answer from accumulated evidence in working memory</td><td>Curated evidence kept within LLM context limits</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2601.18157">arXiv:2601.18157</a></div>
+            </div>
+
+            <!-- Ego-R1 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Ego-R1</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">2025</span>
+                        <span class="badge badge-agentic">Agentic</span>
+                        <span class="badge badge-trained">SFT+RL</span>
+                    </div>
+                </div>
+                <div class="card-description">Chain-of-Tool-Thought (CoTT) for ultra-long egocentric video. Decomposes reasoning into modular steps, one tool per step. Two-stage: SFT on 25K CoTT data + RL on 4.4K QA pairs.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">H-RAG (Hierarchical RAG)</td><td>Multi-scale retrieval (hour/day/week granularity) with keywords + time range</td><td>Questions span "this morning" to "last week" &mdash; need multi-scale</td></tr>
+                        <tr><td class="tool-name">Video-LLM</td><td>Detailed visual understanding of specific time range</td><td>Deep analysis of relevant segment after retrieval</td></tr>
+                        <tr><td class="tool-name">VLM</td><td>Fine-grained visual details from single frame</td><td>Pixel-level inspection after temporal localization</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Project: <a href="https://egolife-ai.github.io/Ego-R1/">Ego-R1</a></div>
+            </div>
+
+            <!-- Video-RAG -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Video-RAG</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">NeurIPS 2025</span>
+                        <span class="badge badge-pipeline">Pipeline</span>
+                    </div>
+                </div>
+                <div class="card-description">Visually-Aligned Retrieval-Augmented Long Video Comprehension. Training-free, plug-and-play. Applying to a 72B model achieves SOTA on Video-MME, surpassing Gemini-1.5-Pro.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Tool</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">ASR (Speech-to-Text)</td><td>Extracts audio transcripts</td><td>Extensive dialogue in long videos provides critical context</td></tr>
+                        <tr><td class="tool-name">OCR</td><td>Extracts on-screen text</td><td>Lectures, UIs, movies with subtitles</td></tr>
+                        <tr><td class="tool-name">Object Detection</td><td>Detects and labels objects in frames</td><td>Structured visual information beyond captions</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2411.13093">arXiv:2411.13093</a></div>
+            </div>
+
+            <!-- SceneRAG -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">SceneRAG</span>
+                    <div class="card-badges">
+                        <span class="badge badge-year">Jun 2025</span>
+                        <span class="badge badge-pipeline">Pipeline</span>
+                    </div>
+                </div>
+                <div class="card-description">Scene-level RAG for video understanding. LLM-based scene segmentation + knowledge graph construction + retrieval-augmented generation. 72.5% win rate on LongerVideos benchmark.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Stage</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">Scene Segmentation</td><td>LLM segments video into narrative-consistent scenes using ASR + temporal metadata</td><td>Fixed-length chunks disrupt context; scene-level preserves semantics</td></tr>
+                        <tr><td class="tool-name">Knowledge Graph Construction</td><td>Fuses vision + text to extract entity relations per scene</td><td>Enables multi-hop retrieval across scenes</td></tr>
+                        <tr><td class="tool-name">RAG Generation</td><td>Retrieves relevant subgraph, aggregates signals, prompts LLM</td><td>Context-rich generation grounded in structured scene knowledge</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2506.07600">arXiv:2506.07600</a></div>
+            </div>
+
+            <!-- LongVU -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">LongVU</span>
+                    <div class="card-badges">
+                        <span class="badge badge-venue">ICML 2025</span>
+                        <span class="badge badge-trained">End-to-End</span>
+                    </div>
+                </div>
+                <div class="card-description">Spatiotemporal Adaptive Compression. Not agentic but represents the alternative paradigm. Reduces to ~2 tokens/frame average, enabling hour-long videos in 8K context.</div>
+                <table class="tool-table">
+                    <thead><tr><th>Mechanism</th><th>What It Does</th><th>Why for Long Videos</th></tr></thead>
+                    <tbody>
+                        <tr><td class="tool-name">DINOv2 Temporal Reduction</td><td>Removes redundant frames with high inter-frame similarity</td><td>Massive temporal redundancy in long videos</td></tr>
+                        <tr><td class="tool-name">Text-Guided Cross-Modal Query</td><td>Retains 144 tokens for relevant frames, 64 for others</td><td>Adaptive detail budget based on relevance</td></tr>
+                        <tr><td class="tool-name">Spatial Token Compression</td><td>Reduces spatial tokens based on temporal dependencies</td><td>Enables hour-long videos within 8K context</td></tr>
+                    </tbody>
+                </table>
+                <div class="card-source">Paper: <a href="https://arxiv.org/abs/2410.17434">arXiv:2410.17434</a> &bull; Code: <a href="https://github.com/Vision-CAIR/LongVU">GitHub</a></div>
+            </div>
+
+        </section>
+
+        <!-- ==================== SECTION 4: SUMMARY TABLE ==================== -->
+        <section class="section" id="summary-table">
+            <h2>4. Complete Summary Table</h2>
+            <div class="table-wrapper">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>System</th>
+                            <th>Year / Venue</th>
+                            <th># Tools</th>
+                            <th>Key Tool Types</th>
+                            <th>Paradigm</th>
+                            <th>Trained?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>ViperGPT</td><td>ICCV 2023</td><td>8</td><td>find, exists, verify_property, depth, match</td><td>Programmatic</td><td>No</td></tr>
+                        <tr><td>AssistGPT</td><td>2023</td><td>10+</td><td>Detect, Caption, Ground, OCR, ASR</td><td>Agentic (PEIL)</td><td>No</td></tr>
+                        <tr><td>VideoAgent (Wang)</td><td>ECCV 2024</td><td>3</td><td>CLIP retrieval, VLM QA, Decision</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>VideoAgent (Fan)</td><td>ECCV 2024</td><td>3</td><td>Segment localization, VQA, Object memory SQL</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>ProViQ</td><td>ECCV 2024</td><td>5</td><td>GroundingDINO, BLIP-2, ByteTrack, LaViLa</td><td>Programmatic</td><td>No</td></tr>
+                        <tr><td>MoReVQA</td><td>CVPR 2024</td><td>3 stages</td><td>Parse, Ground, Reason modules</td><td>Programmatic</td><td>No</td></tr>
+                        <tr><td>MovieChat</td><td>CVPR 2024</td><td>2 modes</td><td>Short-term memory, Long-term memory</td><td>Memory-based</td><td>Yes</td></tr>
+                        <tr><td>MA-LMM</td><td>CVPR 2024</td><td>3</td><td>Online processing, Memory bank, Compression</td><td>Memory-based</td><td>Yes</td></tr>
+                        <tr><td>LLoVi</td><td>EMNLP 2024</td><td>2</td><td>Captioner, LLM Summarizer</td><td>Pipeline</td><td>No</td></tr>
+                        <tr><td>DVD</td><td>NeurIPS 2025</td><td>3</td><td>Global Browse, Clip Search, Frame Inspect</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>VideoAgent2</td><td>NeurIPS 2025</td><td>5</td><td>Caption+confidence, Detection, Zoom, Pre-proc</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>VITAL</td><td>Aug 2025</td><td>1</td><td>Video Clipping (only effective tool)</td><td>Agentic</td><td>SFT+RL</td></tr>
+                        <tr><td>LongShOTAgent</td><td>NeurIPS 2025</td><td>11+</td><td>ASR, OCR, Audio, Search, Refiners, Web</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>AVI</td><td>Nov 2025</td><td>4+</td><td>Retrieve, Perceive, Review, Entity Graph</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>VideoARM</td><td>Dec 2025</td><td>4+</td><td>Temporal Scoping, Multimodal Understanding, HM3</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>VideoExplorer</td><td>2025</td><td>3</td><td>Planner, Temporal Grounding, Visual Perceiver</td><td>Agentic</td><td>SFT+DPO</td></tr>
+                        <tr><td>HAVEN</td><td>Jan 2026</td><td>7</td><td>5 hierarchical tools + diarization + memory</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>EGAgent</td><td>Jan 2026</td><td>6</td><td>Visual/Audio/Graph search, Analyzer, VQA</td><td>Agentic</td><td>No</td></tr>
+                        <tr><td>Ego-R1</td><td>2025</td><td>3</td><td>H-RAG, Video-LLM, VLM</td><td>Agentic</td><td>SFT+RL</td></tr>
+                        <tr><td>Video-RAG</td><td>NeurIPS 2025</td><td>3</td><td>ASR, OCR, Object Detection (plug-in)</td><td>Pipeline</td><td>No</td></tr>
+                        <tr><td>SceneRAG</td><td>Jun 2025</td><td>3 stages</td><td>Scene Seg, Knowledge Graph, RAG</td><td>Pipeline</td><td>No</td></tr>
+                        <tr><td>LongVU</td><td>ICML 2025</td><td>3 mech.</td><td>Temporal/Spatial/Cross-modal compression</td><td>End-to-end</td><td>Yes</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION 5: KEY FINDINGS ==================== -->
+        <section class="section" id="key-findings">
+            <h2>5. Key Empirical Findings</h2>
+
+            <div class="findings-grid">
+                <div class="finding-card">
+                    <div class="finding-title">More Tools != Better</div>
+                    <p>VITAL achieved SOTA with just 1 tool (video clipping). Adding caption and QA tools actually <strong>hurt</strong> performance by introducing noise. VideoDR confirmed tool quality >> tool quantity.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Goal Drift is the Core Bottleneck</div>
+                    <p>VideoDR: when agents cannot re-watch video during multi-step reasoning, initial visual anchors degrade through cascading web/search noise. Workflow paradigms can be more robust for weaker models.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Structured Indexes Win</div>
+                    <p>HAVEN (84.1% LVBench) and EGAgent (57.5% EgoLifeQA) build hierarchical databases or entity graphs. Flat clip-level captions are insufficient for complex reasoning.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Audio is Underutilized but Critical</div>
+                    <p>HAVEN: removing audio drops accuracy 81.0% &rarr; 71.7%. LongShOTBench: ambient audio remains largely untapped. Speaker diarization enables entity tracking across visual appearance changes.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">SFT Before RL for Each Capability</div>
+                    <p>VITAL's 4-stage pipeline: each new capability (reasoning, then tools) requires its own SFT warm-up before RL. Direct tool-RL without SFT fails. Curriculum learning from simple to complex.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Open vs. Closed Source Gap</div>
+                    <p>Across benchmarks, closed-source models (Gemini, GPT) outperform open-source by 15-40 percentage points. Gemini-2.5-Flash: 52.95% vs open-source &lt;30% on LongShOTBench.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Modular Beats Monolithic</div>
+                    <p>LongShOTAgent (44.66%) outperforms open-source monolithic models (&lt;30%) through structured orchestration, NOT parameter scaling. Modular systems are also more interpretable.</p>
+                </div>
+                <div class="finding-card">
+                    <div class="finding-title">Hour-Long Videos Remain Hard</div>
+                    <p>Performance systematically degrades with video length across ALL models. Temporal coherence over extended sequences is fundamentally unsolved. Average accuracy drops 5-8% from &lt;30min to &gt;60min.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION 6: CROSS-CUTTING ==================== -->
+        <section class="section" id="cross-cutting">
+            <h2>6. Cross-Cutting Themes</h2>
+
+            <div class="highlight highlight-insight">
+                <strong>Theme 1: Convergence Toward Coarse-to-Fine</strong>
+                <p>Nearly every system follows the same pattern: (1) build an offline index of the video, (2) use cheap retrieval to narrow the search space, (3) apply expensive perception only to retrieved segments. The systems differ mainly in how they implement each stage.</p>
+            </div>
+
+            <div class="highlight highlight-success">
+                <strong>Theme 2: The Entity Graph Breakthrough</strong>
+                <p>The most successful systems (HAVEN, EGAgent) build structured entity graphs with temporal annotations. This enables multi-hop relational reasoning that is impossible with frame-level retrieval alone. EGAgent showed +32% and +39.7% improvements on tasks requiring cross-temporal entity reasoning.</p>
+            </div>
+
+            <div class="highlight highlight-warning">
+                <strong>Theme 3: Training Methodology Consensus</strong>
+                <p>The training pipeline that works: (1) SFT warm-up for each new capability, (2) RL (GRPO/PPO) to optimize tool selection, (3) Curriculum learning from easy single-tool to complex multi-tool queries. VITAL, Ego-R1, VideoExplorer, LongVideoAgent, and SAGE all follow variants of this pattern.</p>
+            </div>
+
+            <div class="highlight highlight-danger">
+                <strong>Theme 4: The Multimodal Gap</strong>
+                <p>Most systems focus on vision + text. Speech (ASR) is used by ~40% of systems. Ambient audio (non-speech) is used by only LongShOTAgent. Yet LongShOTBench shows that cross-modal verification tasks exhibit the largest performance gaps, suggesting massive untapped potential in audio integration.</p>
+            </div>
+
+            <h3>Evolution Timeline</h3>
+            <div class="mermaid-wrapper">
+                <pre class="mermaid">
+timeline
+    title Evolution of Agentic Long Video Understanding (2023-2026)
+    section 2023
+        ViperGPT : Programmatic composition of vision APIs
+        AssistGPT : PEIL loop with 10+ tools
+    section 2024
+        VideoAgent (x2) : LLM-as-agent, memory-augmented
+        ProViQ / MoReVQA : Modular reasoning, object tracking
+        MA-LMM / MovieChat : Memory banks, compression
+        LLoVi : Caption-then-reason paradigm
+    section 2025
+        DVD : 3-tool agentic search, 74.2% LVBench
+        VITAL : 1 tool + RL, quality over quantity
+        LongShOTAgent : 11+ omni-modal tools
+        AVI : Retrieve-Perceive-Review, open-source
+        VideoARM : Adaptive on-the-fly reasoning
+        VideoExplorer : Thinking with video
+        Ego-R1 : Chain-of-Tool-Thought
+    section 2026
+        HAVEN : Hierarchical entity cohesion, 84.1% LVBench
+        EGAgent : Entity scene graphs for 50hr video
+                </pre>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION 7: SOURCES ==================== -->
+        <section class="section" id="sources">
+            <h2>7. Sources &amp; References</h2>
+
+            <div class="card" style="padding: 1.25rem;">
+                <h3 style="color: var(--primary-light); margin-bottom: 1rem;">All Papers Referenced</h3>
+                <ol style="font-size: 0.88rem; line-height: 2;">
+                    <li>ViperGPT &mdash; <a href="https://arxiv.org/abs/2303.08128">arXiv:2303.08128</a> (ICCV 2023)</li>
+                    <li>AssistGPT &mdash; <a href="https://arxiv.org/abs/2306.08640">arXiv:2306.08640</a> (2023)</li>
+                    <li>MovieChat &mdash; <a href="https://arxiv.org/abs/2307.16449">arXiv:2307.16449</a> (CVPR 2024)</li>
+                    <li>ProViQ &mdash; <a href="https://arxiv.org/abs/2312.00937">arXiv:2312.00937</a> (ECCV 2024)</li>
+                    <li>LLoVi &mdash; <a href="https://arxiv.org/abs/2312.17235">arXiv:2312.17235</a> (EMNLP 2024)</li>
+                    <li>VideoAgent (Wang et al.) &mdash; <a href="https://arxiv.org/abs/2403.10517">arXiv:2403.10517</a> (ECCV 2024)</li>
+                    <li>VideoAgent (Fan et al.) &mdash; <a href="https://arxiv.org/abs/2403.11481">arXiv:2403.11481</a> (ECCV 2024)</li>
+                    <li>MoReVQA &mdash; <a href="https://arxiv.org/abs/2404.06511">arXiv:2404.06511</a> (CVPR 2024)</li>
+                    <li>MA-LMM &mdash; <a href="https://arxiv.org/abs/2404.05726">arXiv:2404.05726</a> (CVPR 2024)</li>
+                    <li>LongVU &mdash; <a href="https://arxiv.org/abs/2410.17434">arXiv:2410.17434</a> (ICML 2025)</li>
+                    <li>Video-RAG &mdash; <a href="https://arxiv.org/abs/2411.13093">arXiv:2411.13093</a> (NeurIPS 2025)</li>
+                    <li>VideoAgent2 &mdash; <a href="https://arxiv.org/abs/2504.04471">arXiv:2504.04471</a> (NeurIPS 2025)</li>
+                    <li>DVD (Deep Video Discovery) &mdash; <a href="https://arxiv.org/abs/2505.18079">arXiv:2505.18079</a> (NeurIPS 2025)</li>
+                    <li>Video-of-Thought &mdash; <a href="https://arxiv.org/abs/2501.03230">arXiv:2501.03230</a> (2025)</li>
+                    <li>VITAL &mdash; <a href="https://arxiv.org/abs/2508.04416">arXiv:2508.04416</a> (Aug 2025)</li>
+                    <li>AVI &mdash; <a href="https://arxiv.org/abs/2511.14446">arXiv:2511.14446</a> (Nov 2025)</li>
+                    <li>VideoARM &mdash; <a href="https://arxiv.org/abs/2512.12360">arXiv:2512.12360</a> (Dec 2025)</li>
+                    <li>LongShOTBench / LongShOTAgent &mdash; <a href="https://arxiv.org/abs/2512.16978">arXiv:2512.16978</a> (NeurIPS 2025)</li>
+                    <li>SceneRAG &mdash; <a href="https://arxiv.org/abs/2506.07600">arXiv:2506.07600</a> (Jun 2025)</li>
+                    <li>VideoExplorer &mdash; <a href="https://arxiv.org/abs/2506.10821">arXiv:2506.10821</a> (2025)</li>
+                    <li>HAVEN &mdash; <a href="https://arxiv.org/abs/2601.13719">arXiv:2601.13719</a> (Jan 2026)</li>
+                    <li>EGAgent &mdash; <a href="https://arxiv.org/abs/2601.18157">arXiv:2601.18157</a> (Jan 2026)</li>
+                    <li>Ego-R1 &mdash; <a href="https://egolife-ai.github.io/Ego-R1/">Project Page</a> (2025)</li>
+                </ol>
+            </div>
+        </section>
+
+        <footer>
+            <p>Generated with Claude Code &bull; Survey compiled February 2026</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem;">Covering 20+ systems from ICCV 2023 through January 2026</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#6366f1',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#4f46e5',
+                lineColor: '#94a3b8',
+                secondaryColor: '#2a2a3e',
+                tertiaryColor: '#1e1e2e',
+                background: '#1e1e2e',
+                mainBkg: '#2a2a3e',
+                nodeBorder: '#3f3f5a',
+                clusterBkg: '#2a2a3e',
+                clusterBorder: '#3f3f5a',
+                titleColor: '#e2e8f0',
+                edgeLabelBackground: '#2a2a3e',
+                cScale0: '#6366f1',
+                cScale1: '#10b981',
+                cScale2: '#f59e0b',
+                cScale3: '#ec4899'
+            }
+        });
+    </script>
+</body>
+</html>
