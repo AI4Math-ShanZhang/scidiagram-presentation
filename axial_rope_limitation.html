@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axial 2D RoPE: The X-Y Axis Limitation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0f1a2e 50%, #0a0f1e 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 48px 80px 80px 80px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* ---- Nav ---- */
+        .nav-btn {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: rgba(56, 189, 248, 0.15);
+            border: 2px solid rgba(56, 189, 248, 0.35);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.25s;
+            z-index: 200;
+        }
+        .nav-btn:hover { background: rgba(56, 189, 248, 0.4); transform: translateY(-50%) scale(1.1); }
+        #prev-btn { left: 18px; }
+        #next-btn { right: 18px; }
+
+        .nav-dots {
+            position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 200;
+        }
+        .nav-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); cursor: pointer;
+            transition: all 0.3s; border: none;
+        }
+        .nav-dot.active { background: #38bdf8; transform: scale(1.4); }
+
+        .slide-counter {
+            position: fixed; bottom: 22px; right: 30px;
+            font-size: 12px; color: rgba(255,255,255,0.35); z-index: 200;
+        }
+
+        /* ---- Typography ---- */
+        .slide-title {
+            font-size: clamp(28px, 4vw, 42px);
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 8px;
+        }
+
+        .slide-subtitle {
+            font-size: clamp(14px, 1.8vw, 18px);
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+            margin-bottom: 36px;
+        }
+
+        /* ---- Boxes ---- */
+        .formula-box {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.07), rgba(99, 102, 241, 0.07));
+            border: 1.5px solid rgba(56, 189, 248, 0.25);
+            border-radius: 14px;
+            padding: 24px 30px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .warn-box {
+            background: linear-gradient(135deg, rgba(251, 113, 133, 0.08), rgba(239, 68, 68, 0.08));
+            border-left: 4px solid #f87171;
+            border-radius: 0 12px 12px 0;
+            padding: 18px 24px;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.07), rgba(16, 185, 129, 0.07));
+            border-left: 4px solid #22c55e;
+            border-radius: 0 12px 12px 0;
+            padding: 18px 24px;
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 11px; font-weight: 600;
+            padding: 3px 10px; border-radius: 20px;
+            letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        .tag-blue { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+        .tag-red  { background: rgba(248,113,133,0.15); color: #f87171; border: 1px solid rgba(248,113,133,0.3); }
+        .tag-green{ background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+        .tag-amber{ background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .accent { color: #38bdf8; }
+        .accent-red { color: #f87171; }
+        .accent-green { color: #4ade80; }
+        .accent-amber { color: #fbbf24; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        .freq-plane {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+            white-space: pre;
+            color: #e2e8f0;
+        }
+
+        img.slide-img {
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            width: 100%;
+            object-fit: contain;
+        }
+
+        .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .bullet-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 1.55; }
+        .bullet-list li::before { content: '▸'; color: #38bdf8; font-size: 13px; margin-top: 3px; flex-shrink: 0; }
+
+        .step-num {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(56,189,248,0.15);
+            border: 2px solid rgba(56,189,248,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px; color: #38bdf8;
+            flex-shrink: 0;
+        }
+
+        .limitation-card {
+            background: rgba(248,113,133,0.05);
+            border: 1px solid rgba(248,113,133,0.2);
+            border-radius: 14px;
+            padding: 20px 22px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 1: TITLE -->
+<div class="slide active" id="slide-1">
+    <div style="max-width: 860px; margin: 0 auto; text-align: center;">
+        <div style="margin-bottom: 28px;">
+            <span class="tag tag-red">Position Embedding · 2D RoPE</span>
+        </div>
+        <h1 style="font-size: clamp(36px, 5.5vw, 60px); font-weight: 800; line-height: 1.1; margin-bottom: 20px;">
+            Axial 2D RoPE<br>
+            <span style="background: linear-gradient(90deg, #f87171, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                The X–Y Axis Limitation
+            </span>
+        </h1>
+        <p style="font-size: 18px; color: rgba(255,255,255,0.55); max-width: 620px; margin: 0 auto 48px;">
+            Why restricting positional encoding to two orthogonal axes
+            leaves diagonal and curved patterns structurally invisible
+        </p>
+        <div class="grid-3" style="max-width: 700px; margin: 0 auto; text-align: left;">
+            <div style="background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 26px; margin-bottom: 6px;">📐</div>
+                <div style="font-size: 13px; font-weight: 600; color: #38bdf8;">Fourier View</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">Attention score as partial Fourier series</div>
+            </div>
+            <div style="background: rgba(248,113,133,0.07); border: 1px solid rgba(248,113,133,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
+                <div style="font-size: 13px; font-weight: 600; color: #f87171;">Separability Trap</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">score = f(Δx) + g(Δy) — no coupling</div>
+            </div>
+            <div style="background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 26px; margin-bottom: 6px;">🔬</div>
+                <div style="font-size: 13px; font-weight: 600; color: #fbbf24;">Visual Proof</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">FFT reconstruction as direct test</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 2: 1D ROPE RECAP -->
+<div class="slide" id="slide-2">
+    <div class="slide-title">RoPE Attention Score = <span class="accent">Partial Fourier Series</span></div>
+    <div class="slide-subtitle">The mathematical foundation before extending to 2D</div>
+
+    <div class="grid-2" style="align-items: start; gap: 36px;">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <p style="font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.65;">
+                In 1D RoPE, the attention score for a single dimension pair <em>t</em>
+                between positions <em>m</em> and <em>n</em> (relative displacement <code class="mono" style="font-size:13px; color:#38bdf8">Δm = m − n</code>) is:
+            </p>
+            <div class="formula-box" style="font-size: 15px; line-height: 2;">
+                <span style="color:#94a3b8">score_t =</span> a<sub>t</sub> · <span style="color:#f87171">cos(Δm · θ<sub>t</sub>)</span> + b<sub>t</sub> · <span style="color:#fb923c">sin(Δm · θ<sub>t</sub>)</span>
+            </div>
+            <p style="font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.65;">
+                Summing over all <code class="mono" style="font-size:13px">d/2</code> dimension pairs:
+            </p>
+            <div class="formula-box" style="font-size: 14px; line-height: 2.1;">
+                score = <span style="color:#38bdf8">Σ<sub>t</sub></span> [ a<sub>t</sub> · cos(Δm · θ<sub>t</sub>) + b<sub>t</sub> · sin(Δm · θ<sub>t</sub>) ]
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="warn-box">
+                <div style="font-weight: 700; font-size: 14px; color: #f87171; margin-bottom: 8px;">
+                    <i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i>Key Consequence
+                </div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    The attention score is a <strong>Fourier series evaluated at the fixed frequency set</strong>
+                    <code class="mono" style="font-size:12px">{θ₀, θ₁, …, θ<sub>d/2−1</sub>}</code>.<br><br>
+                    It is <span class="accent-red">structurally blind</span> to any spatial frequency
+                    <em>not</em> in this set.
+                </p>
+            </div>
+            <div class="insight-box">
+                <div style="font-weight: 700; font-size: 14px; color: #4ade80; margin-bottom: 8px;">
+                    <i class="fas fa-lightbulb" style="margin-right: 6px;"></i>Direct Analogy
+                </div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    Keeping only certain Fourier modes and reconstructing via iFFT tests
+                    <strong>exactly</strong> the same question: which spatial patterns can RoPE build from its available sinusoids?
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 3: AXIAL CONSTRUCTION -->
+<div class="slide" id="slide-3">
+    <div class="slide-title">The Axial 2D Construction</div>
+    <div class="slide-subtitle">The natural but limiting way to extend 1D RoPE to image patches</div>
+
+    <div class="grid-2" style="gap: 36px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <p style="font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.65;">
+                A 2D patch has coordinates <code class="mono" style="font-size:13px; color:#38bdf8">(p_x, p_y)</code>.
+                The simplest approach: <strong>split the embedding dimension in half</strong>,
+                assign each half to one axis.
+            </p>
+            <div class="formula-box" style="font-size: 13px; line-height: 2.3;">
+                <span style="color:#94a3b8">// Step 1: split embedding, rotate each half independently</span><br>
+                x<sup>(x)</sup> = dims 0 … d/2−1 &nbsp;→ rotate by <span style="color:#38bdf8">p_x</span><br>
+                x<sup>(y)</sup> = dims d/2 … d−1 &nbsp;&nbsp;→ rotate by <span style="color:#f87171">p_y</span><br><br>
+                <span style="color:#94a3b8">// Step 2: concatenate along the dimension axis</span><br>
+                RoPE-2D(x, p_x, p_y) = <span style="color:#fbbf24">concat</span>( R<sub>p_x</sub>·x<sup>(x)</sup>, R<sub>p_y</sub>·x<sup>(y)</sup> )<br><br>
+            </div>
+            <div class="insight-box">
+                <p style="font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.8);">
+                    The RoPE operation is a <strong>concatenation along the embedding dimension</strong>.
+                    Each half is blind to the other's axis.
+                </p>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em;">
+                Frequency plane placement
+            </div>
+            <div class="freq-plane">
+         <span style="color:#94a3b8">f_y</span>
+          ↑
+<span style="color:#f87171">  (0,θ₂)●</span>       cos(Δy·θ₂)
+<span style="color:#f87171">  (0,θ₁)●</span>       vertical waves only
+<span style="color:#f87171">  (0,θ₀)●</span>
+          │
+  ────────┼────<span style="color:#38bdf8">●────●────●</span>──→ <span style="color:#94a3b8">f_x</span>
+          │    <span style="color:#38bdf8">(θ₀,0)(θ₁,0)(θ₂,0)</span>
+          │       horizontal waves only
+            </div>
+            <div class="warn-box">
+                <ul class="bullet-list" style="gap: 10px;">
+                    <li><code class="mono" style="font-size:12px">cos(Δx·θ_t)</code> → placed at <code class="mono" style="font-size:12px">(θ_t, 0)</code> — on the f_x axis</li>
+                    <li><code class="mono" style="font-size:12px">cos(Δy·θ_t)</code> → placed at <code class="mono" style="font-size:12px">(0, θ_t)</code> — on the f_y axis</li>
+                    <li style="color: #f87171; font-weight: 600;">No component can ever land <em>off</em> the axes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 4: 2D FREQUENCY PLANE -->
+<div class="slide" id="slide-4">
+    <div class="slide-title">The 2D Frequency Plane: <span class="accent-red">Axis-Only Coverage</span></div>
+    <div class="slide-subtitle">Every Axial RoPE frequency component lives on exactly one of two lines</div>
+
+    <div class="grid-2" style="gap: 40px; align-items: center;">
+        <div>
+            <div class="freq-plane" style="font-size: 12px; line-height: 1.8;">
+<span style="color:#94a3b8">         f_y  (vertical frequency)</span>
+          ↑
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·    ← Axial: f_y axis only</span>
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·</span>
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·</span>
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·</span>
+<span style="color:#94a3b8">  ──●──●──●──┼──●──●──●──→ f_x</span>
+<span style="color:#38bdf8">             ↑ Axial: f_x axis only</span>
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·</span>
+<span style="color:#f87171">    ·  ·  ·  ●  ·  ·  ·</span>
+
+<span style="color: #4ade80;">    ✗  ✗  ✗  ·  ✗  ✗  ✗</span>  ← diagonal
+<span style="color: #4ade80;">    ✗  ✗  ✗  ·  ✗  ✗  ✗</span>    components
+<span style="color: #4ade80;">    ✗  ✗  ✗  ·  ✗  ✗  ✗</span>    unreachable
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <p style="font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.65;">
+                A general 2D Fourier component has the form:
+            </p>
+            <div class="formula-box" style="font-size: 14px; line-height: 2;">
+                cos(<span style="color:#fbbf24">f_x</span>·Δx + <span style="color:#fb923c">f_y</span>·Δy)
+                &nbsp;&nbsp;→&nbsp; address: <span style="color:#38bdf8">(f_x, f_y)</span>
+            </div>
+            <p style="font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.65;">
+                For <code class="mono" style="font-size:13px">cos(Δx·θ_t)</code>, rewrite:
+            </p>
+            <div class="formula-box" style="font-size: 13px; line-height: 2.1;">
+                cos(Δx·θ_t) = cos(<span style="color:#fbbf24">θ_t</span>·Δx + <span style="color:#fb923c">0</span>·Δy)<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#fbbf24">f_x=θ_t</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f87171">f_y=0 ← forced</span>
+            </div>
+            <div class="warn-box">
+                <strong style="color: #f87171;">The diagonal zone (f_x ≠ 0, f_y ≠ 0) is permanently empty.</strong>
+                <p style="font-size: 14px; margin-top: 8px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    Features like diagonal edges, rotated shapes, circular boundaries —
+                    all require coupled frequency components that Axial RoPE structurally cannot produce.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 5: SEPARABILITY -->
+<div class="slide" id="slide-5">
+    <div class="slide-title">The <span class="accent-red">Separability</span> Problem</div>
+    <div class="slide-subtitle">score = f(Δx) + g(Δy) — the hidden structural constraint</div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px; margin: 0 auto; width: 100%;">
+
+        <div class="formula-box" style="font-size: 16px; line-height: 2.2; text-align: center;">
+            Axial score = <span style="color:#38bdf8">f(<strong>Δx</strong>)</span> &nbsp;+&nbsp; <span style="color:#f87171">g(<strong>Δy</strong>)</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#94a3b8; font-size:13px">← two independent 1D functions</span>
+        </div>
+
+        <div class="grid-3" style="gap: 18px;">
+            <div class="limitation-card">
+                <div style="font-size: 20px; margin-bottom: 10px;">↗</div>
+                <div style="font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 8px;">Diagonal Attention</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    "Attend to patches exactly on the diagonal (Δx = Δy)"<br>
+                    requires <code class="mono" style="font-size:11px">Δx·Δy</code> coupling<br>
+                    → <strong class="accent-red">impossible</strong>
+                </p>
+            </div>
+            <div class="limitation-card">
+                <div style="font-size: 20px; margin-bottom: 10px;">⊙</div>
+                <div style="font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 8px;">Radial Distance</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    "Attend to patches 5 steps away in <em>any</em> direction"<br>
+                    requires <code class="mono" style="font-size:11px">√(Δx²+Δy²)</code><br>
+                    → <strong class="accent-red">impossible</strong>
+                </p>
+            </div>
+            <div class="limitation-card">
+                <div style="font-size: 20px; margin-bottom: 10px;">∠</div>
+                <div style="font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 8px;">Orientation Sensitivity</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    Recognition of any off-axis edge or boundary<br>
+                    requires cross-axis frequency<br>
+                    → <strong class="accent-red">structurally absent</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="grid-2" style="gap: 20px;">
+            <div class="warn-box">
+                <div style="font-weight: 700; font-size: 14px; color: #f87171; margin-bottom: 8px;">Why "Complete" Doesn't Mean "Sufficient"</div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    <code class="mono" style="font-size:12px">(Δx, Δy)</code> technically spans all of 2D space —
+                    any displacement can be <em>represented</em>.<br><br>
+                    But the attention score decomposes into a <strong>sum</strong>, not a product.
+                    Cross-axis interactions (Δx × Δy terms) vanish entirely.
+                </p>
+            </div>
+            <div class="insight-box">
+                <div style="font-weight: 700; font-size: 14px; color: #4ade80; margin-bottom: 8px;">The Navigation Analogy</div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    It's like describing locations with only "how far East" + "how far North."
+                    <em>Technically complete</em>, but detecting a pattern along a diagonal road
+                    requires directly measuring the northeast component —
+                    you can't reconstruct it from independent East/North sums alone.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 6: FREQ MASKS -->
+<div class="slide" id="slide-6">
+    <div class="slide-title">Frequency Support Masks</div>
+    <div class="slide-subtitle">Visualizing what Axial RoPE can and cannot see in the 2D frequency plane</div>
+
+    <div class="grid-2" style="gap: 36px; align-items: start;">
+        <div>
+            <img src="assets/axial_rope/spiral_rope_freq_masks.png"
+                 class="slide-img" alt="Frequency support masks"
+                 style="max-height: 420px; object-position: center; cursor: zoom-in;"
+                 onclick="openLightbox(this.src)">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 10px; text-align: center;">
+                White = frequency components present · Black = structurally absent
+            </p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 20px; justify-content: center;">
+            <p style="font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.7;">
+                The <span class="accent-red">Axial mask (left)</span> is a cross — two perpendicular lines through the origin.
+            </p>
+            <ul class="bullet-list">
+                <li>All frequency energy is confined to the <strong>horizontal (f_x)</strong> and <strong>vertical (f_y)</strong> axes</li>
+                <li>The entire <strong>diagonal half-plane</strong> (f_x ≠ 0 and f_y ≠ 0) is empty</li>
+                <li>With <code class="mono" style="font-size:12px">d=1024</code>: 256 frequencies per axis but <strong>zero directional diversity</strong></li>
+            </ul>
+            <div class="warn-box">
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    The 2D plane has <strong>infinitely many directions</strong>, yet Axial RoPE concentrates
+                    all its budget on exactly <strong>2 of them</strong> — horizontal and vertical.
+                    Any image feature oriented differently is positionally invisible.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 7: FOURIER SPECTRA -->
+<div class="slide" id="slide-7">
+    <div class="slide-title">What Gets Lost in the Fourier Domain</div>
+    <div class="slide-subtitle">Direct test: keep only the RoPE-supported frequencies and reconstruct</div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div style="display: flex; gap: 14px; align-items: stretch;">
+            <div style="display: flex; flex-direction: column; justify-content: space-around;
+                        padding: 4px 0; min-width: 90px; flex-shrink: 0;">
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Point</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Circle</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Square</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Triangle</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(248,113,133,0.85); text-align: right;">Diamond</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Star</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Cross</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Ellipse</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Hexagon</span>
+            </div>
+            <img src="assets/axial_rope/spiral_rope_fourier_spectra.png"
+                 class="slide-img zoomable" alt="Fourier spectra comparison"
+                 style="max-height: 340px; object-fit: contain; cursor: zoom-in; flex: 1;"
+                 onclick="openLightbox(this.src)">
+        </div>
+
+        <div class="grid-3" style="gap: 18px;">
+            <div style="background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 12px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Original Spectrum</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    Full 2D Fourier spectrum contains energy in all directions — diagonal ridges, circular rings, off-axis lobes
+                </p>
+            </div>
+            <div style="background: rgba(248,113,133,0.06); border: 1px solid rgba(248,113,133,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 12px; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">After Axial Mask</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    Only the cross pattern survives — vast swaths of the frequency plane are zeroed out
+                </p>
+            </div>
+            <div style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 12px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Consequence</div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    The reconstructed image loses all diagonal structure — Axial RoPE experiences these same blind spots in its attention modulation
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 8: SHAPE RECONSTRUCTION -->
+<div class="slide" id="slide-8">
+    <div class="slide-title">Shape Reconstruction: <span class="accent-red">Axis-Aligned vs Diagonal</span></div>
+    <div class="slide-subtitle">The FFT experiment is not an analogy — it directly tests the same mathematical question as attention</div>
+
+    <div style="display: flex; flex-direction: column; gap: 22px;">
+        <div style="display: flex; gap: 14px; align-items: stretch;">
+            <!-- Shape name labels aligned to image rows -->
+            <div style="display: flex; flex-direction: column; justify-content: space-around;
+                        padding: 4px 0; min-width: 90px; flex-shrink: 0;">
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Point</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Circle</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Square</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Triangle</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(248,113,133,0.85); text-align: right;">Diamond</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Star</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Cross</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Ellipse</span>
+                <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); text-align: right;">Hexagon</span>
+            </div>
+            <img src="assets/axial_rope/spiral_rope_figure2.png"
+                 class="slide-img" alt="Shape reconstruction test"
+                 style="max-height: 340px; object-fit: contain; flex: 1; cursor: zoom-in;"
+                 onclick="openLightbox(this.src)">
+        </div>
+
+        <div class="grid-2" style="gap: 20px;">
+            <div>
+                <div style="font-size: 12px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                    Axial RoPE handles well ✓
+                </div>
+                <ul class="bullet-list">
+                    <li><strong>Square, Cross</strong> — axis-aligned edges → Fourier energy naturally on the f_x/f_y axes</li>
+                    <li>These shapes' frequency content aligns with the only two directions Axial RoPE covers</li>
+                </ul>
+            </div>
+            <div>
+                <div style="font-size: 12px; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                    Axial RoPE struggles ✗
+                </div>
+                <ul class="bullet-list">
+                    <li><strong>Diamond</strong> — 45° edges are Axial RoPE's worst case; all edge energy is off-axis</li>
+                    <li><strong>Circle, Ellipse</strong> — curvature requires energy in all directions; axial cross captures very little</li>
+                    <li><strong>Triangle, Hexagon</strong> — mix of diagonal edges causes severe reconstruction artifacts</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 9: ROTATION TEST -->
+<div class="slide" id="slide-9">
+    <div class="slide-title">Rotation Sensitivity: <span class="accent-red">The Quantitative Evidence</span></div>
+    <div class="slide-subtitle">Reconstruction quality degrades whenever content rotates away from axis alignment</div>
+
+    <div class="grid-2" style="gap: 36px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <img src="assets/axial_rope/spiral_rope_rotation_45deg.png"
+                 class="slide-img" alt="45 degree rotation test"
+                 style="max-height: 280px; object-fit: contain; cursor: zoom-in;"
+                 onclick="openLightbox(this.src)">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.4); text-align: center;">
+                Shapes rotated 45° — Axial RoPE artifacts peak at this angle
+            </p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <img src="assets/axial_rope/spiral_rope_rotation_psnr_summary.png"
+                 class="slide-img" alt="PSNR vs rotation angle"
+                 style="max-height: 280px; object-fit: contain; cursor: zoom-in;"
+                 onclick="openLightbox(this.src)">
+            <div class="warn-box">
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    <strong>By the Fourier Rotation Theorem</strong>, rotating the image by α
+                    rotates its spectrum by α. When content rotates off-axis, it exits
+                    the narrow cross where Axial RoPE has any frequency support —
+                    PSNR drops sharply.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 10: DIRECTIONS vs FREQUENCIES -->
+<div class="slide" id="slide-10">
+    <div class="slide-title">Directions vs Frequencies: <span class="accent">Two Axes of the Budget</span></div>
+    <div class="slide-subtitle">Axial RoPE uses all its budget on scale — and none on orientation</div>
+
+    <div class="grid-2" style="gap: 36px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <p style="font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.65;">
+                Every 2D Fourier component needs <em>two</em> things:
+            </p>
+            <div class="formula-box" style="font-size: 13px; line-height: 2.2;">
+                <span style="color:#38bdf8">Frequency</span> |f| = √(f_x² + f_y²) &nbsp; ← <em>scale</em><br>
+                <span style="color:#f87171">Direction</span> &nbsp;φ = atan2(f_y, f_x) ← <em>orientation</em>
+            </div>
+            <p style="font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.65;">
+                Think of radio: <strong style="color:#38bdf8">frequency</strong> = what station (AM 540 vs AM 1600).
+                <strong style="color:#f87171">Direction</strong> = which way the antenna points.
+                Both matter to receive the signal.
+            </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div style="background: rgba(248,113,133,0.07); border: 1px solid rgba(248,113,133,0.2); border-radius: 14px; padding: 20px;">
+                <div style="font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 12px;">
+                    Axial RoPE  (d = 1024)
+                </div>
+                <div class="mono" style="font-size: 12px; line-height: 1.9; color: rgba(255,255,255,0.75);">
+                    Direction  0° (x-axis): θ₀ … θ₂₅₅  &nbsp;← 256 freqs<br>
+                    Direction 90° (y-axis): θ₀ … θ₂₅₅  &nbsp;← 256 freqs<br>
+                    ──────────────────────────────────<br>
+                    <span style="color:#f87171">2 directions × 256 frequencies</span><br>
+                    <em>Rich in scale, destitute in orientation</em>
+                </div>
+            </div>
+            <div class="warn-box">
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    Real images contain edges, textures, and boundaries at <strong>arbitrary orientations</strong>.
+                    A diagonal boundary between objects is an off-axis feature that Axial RoPE cannot
+                    positionally distinguish from a nearby parallel one.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLIDE 11: SUMMARY -->
+<div class="slide" id="slide-11">
+    <div class="slide-title">Summary: <span class="accent-red">Three Core Limitations</span></div>
+    <div class="slide-subtitle">The structural reasons why Axial 2D RoPE falls short for visual understanding</div>
+
+    <div style="display: flex; flex-direction: column; gap: 22px; max-width: 900px; margin: 0 auto; width: 100%;">
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div class="step-num" style="background: rgba(248,113,133,0.15); border-color: rgba(248,113,133,0.4); color: #f87171;">1</div>
+            <div class="limitation-card" style="flex: 1;">
+                <div style="font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #f87171;">Axis-Only Frequency Support</div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    Every frequency component in Axial RoPE lies on either the f_x or f_y axis.
+                    The entire off-axis region of the 2D frequency plane — where diagonal and curved features live — is <strong>structurally empty</strong>.
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div class="step-num" style="background: rgba(248,113,133,0.15); border-color: rgba(248,113,133,0.4); color: #f87171;">2</div>
+            <div class="limitation-card" style="flex: 1;">
+                <div style="font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #f87171;">Separable Score Function</div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    The attention score decomposes as <code class="mono" style="font-size:12px">f(Δx) + g(Δy)</code>.
+                    No cross-axis term exists. Patterns requiring joint Δx–Δy dependence
+                    (diagonal attention, radial isotropy, orientation selectivity) are fundamentally unrepresentable.
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div class="step-num" style="background: rgba(248,113,133,0.15); border-color: rgba(248,113,133,0.4); color: #f87171;">3</div>
+            <div class="limitation-card" style="flex: 1;">
+                <div style="font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #f87171;">Rotation-Dependent Quality</div>
+                <p style="font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.8);">
+                    Reconstruction quality is rotation-angle-dependent: good at 0°/90°, severely degraded at 45°.
+                    Real images inherently contain features at <em>all</em> orientations —
+                    a diagonal object boundary is structurally equivalent to a "worst-case rotation" for Axial RoPE.
+                </p>
+            </div>
+        </div>
+
+        <div class="insight-box" style="margin-top: 4px;">
+            <p style="font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.85);">
+                <strong style="color: #4ade80;">The fix requires directional coverage:</strong>
+                populating the 2D frequency plane along more than 2 directions,
+                so that positional encoding can sense displacement at arbitrary orientations —
+                not just horizontal and vertical.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ NAV UI -->
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()"
+     style="display:none; position:fixed; inset:0; z-index:1000;
+            background:rgba(0,0,0,0.85); cursor:zoom-out;
+            align-items:center; justify-content:center;">
+    <img id="lightbox-img" src="" alt=""
+         style="max-width:92vw; max-height:92vh; border-radius:10px;
+                box-shadow:0 0 60px rgba(0,0,0,0.8); object-fit:contain;">
+</div>
+
+<button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)">
+    <i class="fas fa-chevron-left"></i>
+</button>
+<button class="nav-btn" id="next-btn" onclick="changeSlide(1)">
+    <i class="fas fa-chevron-right"></i>
+</button>
+
+<div class="nav-dots" id="nav-dots"></div>
+<div class="slide-counter" id="slide-counter"></div>
+
+<script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const dotsContainer = document.getElementById('nav-dots');
+    slides.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+    });
+
+    function updateCounter() {
+        document.getElementById('slide-counter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+    }
+
+    function goToSlide(index) {
+        slides[currentSlide].classList.remove('active');
+        document.querySelectorAll('.nav-dot')[currentSlide].classList.remove('active');
+        currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+        slides[currentSlide].classList.add('active');
+        document.querySelectorAll('.nav-dot')[currentSlide].classList.add('active');
+        document.getElementById('prev-btn').style.opacity = currentSlide === 0 ? '0.3' : '1';
+        document.getElementById('next-btn').style.opacity = currentSlide === totalSlides - 1 ? '0.3' : '1';
+        updateCounter();
+    }
+
+    function changeSlide(dir) { goToSlide(currentSlide + dir); }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+        if (e.key === 'Escape') closeLightbox();
+    });
+
+    function openLightbox(src) {
+        const lb = document.getElementById('lightbox');
+        document.getElementById('lightbox-img').src = src;
+        lb.style.display = 'flex';
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+    }
+
+    goToSlide(0);
+</script>
+</body>
+</html>
