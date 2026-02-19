@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase ViT v2 — Bridging the Receptive Field Gap</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2d4a 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .slide {
+            display: none;
+            min-height: 100vh;
+            padding: 36px 60px 80px 60px;
+            position: relative;
+        }
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            padding: 15px 60px;
+            font-size: 14px;
+            background: linear-gradient(to top, rgba(15,23,42,0.95), rgba(15,23,42,0.7), transparent);
+            z-index: 100;
+        }
+
+        .nav-buttons { position: fixed; bottom: 50%; transform: translateY(50%); z-index: 200; }
+        .nav-buttons.left { left: 20px; }
+        .nav-buttons.right { right: 20px; }
+        .nav-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(59,130,246,0.3); border: 2px solid rgba(59,130,246,0.5);
+            color: white; font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+        }
+        .nav-btn:hover { background: rgba(59,130,246,0.6); transform: scale(1.1); }
+
+        .nav-dots {
+            position: fixed; right: 30px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px; z-index: 200;
+        }
+        .nav-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s; border: none;
+        }
+        .nav-dot.active { background: #3b82f6; transform: scale(1.3); }
+        .nav-dot:hover { background: rgba(59,130,246,0.5); }
+
+        .formula-box {
+            background: linear-gradient(135deg,rgba(59,130,246,0.1),rgba(34,197,94,0.1));
+            border: 2px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 24px;
+        }
+        .code-box {
+            background: rgba(30,41,59,0.8); border: 1px solid rgba(100,116,139,0.3);
+            border-radius: 12px; padding: 14px; font-family: 'Fira Code', monospace; font-size: 12px; overflow-x: auto;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.1));
+            border-left: 5px solid #f59e0b; padding: 18px; border-radius: 0 12px 12px 0;
+        }
+        .insight-box {
+            background: linear-gradient(135deg,rgba(34,197,94,0.1),rgba(16,185,129,0.1));
+            border-left: 5px solid #22c55e; padding: 18px; border-radius: 0 12px 12px 0;
+        }
+        .warning-box {
+            background: linear-gradient(135deg,rgba(239,68,68,0.1),rgba(220,38,38,0.1));
+            border-left: 5px solid #ef4444; padding: 18px; border-radius: 0 12px 12px 0;
+        }
+        .math-box {
+            background: linear-gradient(135deg,rgba(168,85,247,0.15),rgba(139,92,246,0.1));
+            border: 2px solid rgba(168,85,247,0.4); border-radius: 12px; padding: 16px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeLeft { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes fadeRight { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+        .animate-fade-up { animation: fadeUp 0.6s ease-out forwards; }
+        .animate-fade-down { animation: fadeDown 0.6s ease-out forwards; }
+        .animate-fade-left { animation: fadeLeft 0.6s ease-out forwards; }
+        .animate-fade-right { animation: fadeRight 0.6s ease-out forwards; }
+
+        .lightbox {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.92); z-index: 1000; justify-content: center; align-items: center; cursor: zoom-out;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img { max-width:95%; max-height:95%; object-fit:contain; border-radius:8px; box-shadow:0 0 30px rgba(0,0,0,0.5); }
+        .lightbox-close { position:absolute; top:20px; right:30px; font-size:40px; color:white; cursor:pointer; opacity:0.7; transition:opacity 0.2s; }
+        .lightbox-close:hover { opacity:1; }
+        .zoomable { cursor:zoom-in; transition:transform 0.2s, box-shadow 0.2s; }
+        .zoomable:hover { transform:scale(1.02); box-shadow:0 0 15px rgba(6,182,212,0.3); }
+
+        .result-better { color: #22c55e; font-weight: 700; }
+        .result-worse  { color: #ef4444; }
+        .result-neutral{ color: #94a3b8; }
+
+        .bar-bg { background: rgba(30,41,59,0.8); border-radius: 8px; overflow: hidden; height: 28px; position: relative; }
+        .bar-fill { height: 100%; border-radius: 8px; transition: width 1s ease-out; display:flex; align-items:center; padding-left:10px; font-size:13px; font-weight:600; }
+    </style>
+</head>
+<body>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- Nav -->
+<div class="nav-buttons left"><button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button></div>
+<div class="nav-buttons right"><button class="nav-btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button></div>
+<div class="nav-dots" id="nav-dots"></div>
+
+<!-- Footer -->
+<footer class="slide-footer">
+    <div style="display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:1rem;">
+        <div class="text-slate-400"><span class="text-slate-300 font-medium">Phase ViT v2</span></div>
+        <div class="text-slate-400 font-medium tracking-wide text-center">Bridging the Receptive Field Gap</div>
+        <div class="flex items-center justify-end gap-4 text-slate-400">
+            <span class="text-slate-300 font-mono"><span id="current-page">1</span> / <span id="total-pages">10</span></span>
+        </div>
+    </div>
+</footer>
+
+<!-- ============================================================ -->
+<!-- SLIDE 0: TITLE -->
+<!-- ============================================================ -->
+<section class="slide active" data-index="0">
+    <div class="text-center max-w-5xl mx-auto">
+        <div class="mb-6 animate-fade-down">
+            <i class="fa-solid fa-wave-square text-cyan-400" style="font-size:70px;"></i>
+        </div>
+        <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-4">
+            Follow-up Research
+        </div>
+        <h1 class="font-serif font-bold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-emerald-400 to-blue-400 mb-5" style="font-size:48px;">
+            Phase ViT v2
+        </h1>
+        <p class="text-2xl text-slate-300 mb-3">
+            Bridging the <span class="text-red-400 font-semibold">Receptive Field Gap</span>
+        </p>
+        <p class="text-lg text-slate-500 mb-10">
+            How dilated convolutions + neighborhood aggregation finally beat the Patch ViT baseline on CIFAR-100
+        </p>
+
+        <div class="grid grid-cols-3 gap-5 mt-6 text-left animate-fade-up">
+            <div class="bg-gradient-to-br from-red-500/20 to-red-500/5 p-5 rounded-2xl border border-red-500/30">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-magnifying-glass text-red-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-red-400">Root Cause</h3>
+                </div>
+                <p class="text-slate-400 text-sm">Point-based token sampling → too narrow receptive field vs. ViT's patch-level coverage</p>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500/20 to-amber-500/5 p-5 rounded-2xl border border-amber-500/30">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-expand text-amber-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-400">Two Fixes</h3>
+                </div>
+                <p class="text-slate-400 text-sm">Dilated backbone (receptive field ↑) + neighborhood token extraction (3×3 aggregation)</p>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 p-5 rounded-2xl border border-emerald-500/30">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-trophy text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-emerald-400">Result</h3>
+                </div>
+                <p class="text-slate-400 text-sm">CIFAR-100: 60.56% → <span class="text-emerald-400 font-bold">68.20%</span> (+7.64%). Beats Patch ViT baseline (63.80%)</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: RECAP — THE PREVIOUS PROBLEM -->
+<!-- ============================================================ -->
+<section class="slide" data-index="1">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-5 text-center animate-fade-down">
+            <div class="inline-block bg-slate-500/20 px-4 py-1 rounded-full text-slate-400 text-sm font-bold mb-3">
+                Recap
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Previous Results: <span class="text-red-400">Phase ViT Underperformed</span></h2>
+            <p class="text-slate-400 mt-2">Despite adaptive tokenization, Phase ViT consistently trailed the Patch ViT baseline on CIFAR-100</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-8 items-start">
+            <!-- Left: Previous result table -->
+            <div class="animate-fade-right">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-bold text-slate-300 mb-4 text-center">
+                        <i class="fa-solid fa-table mr-2 text-blue-400"></i>Previous Benchmark (Base Model)
+                    </h3>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-slate-700/50">
+                                <th class="p-3 text-left text-slate-300 font-semibold rounded-tl-xl">Model</th>
+                                <th class="p-3 text-center text-slate-300 font-semibold">Tokens</th>
+                                <th class="p-3 text-center text-slate-300 font-semibold">Shapes</th>
+                                <th class="p-3 text-center text-slate-300 font-semibold rounded-tr-xl">CIFAR-100</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-slate-700 bg-slate-700/20">
+                                <td class="p-3 text-blue-400 font-bold">Patch ViT (baseline)</td>
+                                <td class="p-3 text-center text-slate-300">196</td>
+                                <td class="p-3 text-center text-slate-300">92.50%</td>
+                                <td class="p-3 text-center text-blue-300 font-bold">63.80%</td>
+                            </tr>
+                            <tr class="border-b border-slate-700">
+                                <td class="p-3 text-cyan-400 font-bold">Phase ViT (topn=64)</td>
+                                <td class="p-3 text-center text-slate-300">64</td>
+                                <td class="p-3 text-center text-slate-300">83.00%</td>
+                                <td class="p-3 text-center text-red-400">54.60% <span class="text-red-500 text-xs">(-9.2)</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 text-purple-400 font-bold rounded-bl-xl">Phase ViT (topn=128)</td>
+                                <td class="p-3 text-center text-slate-300">128</td>
+                                <td class="p-3 text-center text-slate-300">93.88%</td>
+                                <td class="p-3 text-center text-red-400 rounded-br-xl">58.84% <span class="text-red-500 text-xs">(-4.96)</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-4 warning-box">
+                        <p class="text-sm text-slate-300">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 mr-2"></i>
+                            Scaling to <span class="text-white font-semibold">196 tokens still only reaches 60.56%</span> — below the 63.80% baseline. The problem is not token count — it's <span class="text-red-400 font-semibold">how tokens are extracted</span>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Key question -->
+            <div class="animate-fade-left space-y-4">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-amber-500/30">
+                    <h3 class="text-lg font-bold text-amber-400 mb-3">
+                        <i class="fa-solid fa-question-circle mr-2"></i>The Core Question
+                    </h3>
+                    <p class="text-slate-300 mb-4">
+                        Phase ViT selects semantically meaningful positions — so <span class="text-white font-semibold">why does it underperform</span>?
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-red-500/30 flex items-center justify-center text-red-400 font-bold flex-shrink-0 text-sm">✗</div>
+                            <p class="text-slate-400 text-sm">Hypothesis: wrong positions? <span class="text-green-400">No — filter responses look meaningful</span></p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-red-500/30 flex items-center justify-center text-red-400 font-bold flex-shrink-0 text-sm">✗</div>
+                            <p class="text-slate-400 text-sm">Hypothesis: too few tokens? <span class="text-green-400">No — 128 tokens still fails</span></p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-amber-500/30 flex items-center justify-center text-amber-400 font-bold flex-shrink-0 text-sm">?</div>
+                            <p class="text-slate-400 text-sm"><span class="text-white">Hypothesis: insufficient context per token?</span> → Need to verify via visualization</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-cyan-500/30">
+                    <h3 class="text-lg font-bold text-cyan-400 mb-3">
+                        <i class="fa-solid fa-microscope mr-2"></i>Investigation Approach
+                    </h3>
+                    <p class="text-slate-400 text-sm mb-3">Compare attention maps between Patch ViT and Phase ViT to see how much spatial context each model uses per token.</p>
+                    <div class="code-box text-xs">
+                        <p class="text-slate-500"># Visualize attention coverage:</p>
+                        <p class="text-cyan-300">visualize_vit_attention(model, images)</p>
+                        <p class="text-cyan-300">visualize_phase_attention(phase_vit, images)</p>
+                        <p class="text-slate-500"># → reveals spatial coverage difference</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: DIAGNOSIS — ATTENTION WIDTH COMPARISON -->
+<!-- ============================================================ -->
+<section class="slide" data-index="2">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-4 text-center animate-fade-down">
+            <div class="inline-block bg-red-500/20 px-4 py-1 rounded-full text-red-400 text-sm font-bold mb-3">
+                Diagnosis
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Root Cause: <span class="text-red-400">Point Sampling is Too Narrow</span></h2>
+            <p class="text-slate-400 mt-2">Attention maps reveal a stark coverage difference between ViT and Phase ViT</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 animate-fade-up">
+            <!-- Left: Patch ViT -->
+            <div class="bg-slate-800/40 p-4 rounded-2xl border border-blue-500/30">
+                <h3 class="text-base font-bold text-blue-400 mb-3 text-center">
+                    <i class="fa-solid fa-grid-2 mr-2"></i>Patch ViT — Wide Attention
+                </h3>
+                <img src="assets/phase_v2/vit_attention_cifar_apple.png" alt="ViT Attention - Apple"
+                     class="w-full rounded-lg border border-slate-600/50 zoomable" onclick="openLightbox(this.src)">
+                <div class="mt-3 space-y-2">
+                    <div class="flex items-center gap-2 text-blue-300 text-sm">
+                        <i class="fa-solid fa-check text-blue-400"></i>
+                        <span>Each token covers a full <strong>16×16 patch</strong> region</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-blue-300 text-sm">
+                        <i class="fa-solid fa-check text-blue-400"></i>
+                        <span>Attention spans <strong>large contiguous areas</strong> of the object</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-blue-300 text-sm">
+                        <i class="fa-solid fa-check text-blue-400"></i>
+                        <span>Global context from overlapping attention fields</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Phase ViT (point) -->
+            <div class="bg-slate-800/40 p-4 rounded-2xl border border-red-500/30">
+                <h3 class="text-base font-bold text-red-400 mb-3 text-center">
+                    <i class="fa-solid fa-crosshairs mr-2"></i>Phase ViT (Point Selection) — Narrow
+                </h3>
+                <img src="assets/phase_v2/phase_point_token_attention.png" alt="Phase ViT Point Attention"
+                     class="w-full rounded-lg border border-slate-600/50 zoomable" onclick="openLightbox(this.src)">
+                <div class="mt-3 space-y-2">
+                    <div class="flex items-center gap-2 text-red-300 text-sm">
+                        <i class="fa-solid fa-xmark text-red-400"></i>
+                        <span>Token = <strong>single pixel feature</strong> at selected position</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-red-300 text-sm">
+                        <i class="fa-solid fa-xmark text-red-400"></i>
+                        <span>No aggregation of surrounding context</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-red-300 text-sm">
+                        <i class="fa-solid fa-xmark text-red-400"></i>
+                        <span>Attention field too <strong>narrow to encode shape/texture</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 animate-fade-up">
+            <div class="warning-box">
+                <p class="text-base text-slate-200 text-center">
+                    <i class="fa-solid fa-eye text-red-400 mr-2"></i>
+                    <span class="text-red-400 font-bold">Key Finding:</span>
+                    Phase ViT selects the <span class="text-white font-semibold">right locations</span> but each token captures too <span class="text-white font-semibold">little spatial context</span>.
+                    Patch ViT's 16×16 patch provides rich, spatially integrated features per token. Phase ViT's single-point sampling cannot match this coverage.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: SOLUTION 1 — DILATED BACKBONE -->
+<!-- ============================================================ -->
+<section class="slide" data-index="3">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-5 text-center animate-fade-down">
+            <div class="inline-block bg-amber-500/20 px-4 py-1 rounded-full text-amber-400 text-sm font-bold mb-3">
+                Fix 1 / 2
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Dilated Backbone: <span class="text-amber-400">Expand the Receptive Field</span></h2>
+            <p class="text-slate-400 mt-2">Replace standard Stage 3 with dilated convolutions — same output resolution, much wider context</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Left: Architecture change -->
+            <div class="animate-fade-right space-y-4">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-amber-500/30">
+                    <h3 class="text-base font-bold text-amber-400 mb-3">
+                        <i class="fa-solid fa-code mr-2"></i>CNNBackboneDilated
+                    </h3>
+                    <div class="code-box text-xs">
+                        <p class="text-slate-500"># Standard backbone: stride reduces size</p>
+                        <p class="text-red-300">Stage 3: Conv(stride=2) → H/16</p>
+                        <p class="text-slate-300 mt-2"></p>
+                        <p class="text-slate-500"># Dilated backbone: no stride, wider coverage</p>
+                        <p class="text-emerald-300">Stage 3: Conv(dilation=2) → H/8  # 5×5 eff.</p>
+                        <p class="text-emerald-300">         Conv(dilation=4) → H/8  # 9×9 eff.</p>
+                        <p class="text-slate-300 mt-2"></p>
+                        <p class="text-slate-500"># Output stays at same H/8 resolution</p>
+                        <p class="text-cyan-300">output_stride = 8  # unchanged</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-cyan-500/30">
+                    <h3 class="text-base font-bold text-cyan-400 mb-3">
+                        <i class="fa-solid fa-arrows-left-right mr-2"></i>Receptive Field Expansion
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Standard backbone</span>
+                                <span class="text-red-400 font-bold">~71 px</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-red-600 to-red-500 text-red-100" style="width:43%">71 px</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Dilated backbone</span>
+                                <span class="text-emerald-400 font-bold">~163 px</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-emerald-600 to-emerald-500 text-emerald-100" style="width:100%">163 px</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-slate-500 text-xs mt-3">
+                        Each feature position now integrates context from a <span class="text-white">2.3× larger</span> image region, encoding richer local semantics before token selection.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Visual diagram -->
+            <div class="animate-fade-left">
+                <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                    <h3 class="text-base font-bold text-slate-300 mb-4 text-center">
+                        <i class="fa-solid fa-diagram-project mr-2 text-amber-400"></i>Dilation Explained
+                    </h3>
+                    <div class="flex justify-center">
+                        <svg width="420" height="300" viewBox="0 0 420 300">
+                            <defs>
+                                <marker id="arr3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                    <polygon points="0 0, 8 3, 0 6" fill="#60a5fa"/>
+                                </marker>
+                            </defs>
+
+                            <!-- Standard conv -->
+                            <text x="95" y="18" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">Standard (stride 2)</text>
+                            <g transform="translate(10, 28)">
+                                <!-- Grid 7x7 -->
+                                <rect x="0" y="0" width="170" height="100" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                                <!-- 3x3 kernel highlighted -->
+                                <rect x="30" y="25" width="60" height="60" rx="3" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="2"/>
+                                <!-- contiguous cells -->
+                                <rect x="30" y="25" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="50" y="25" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="70" y="25" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="30" y="45" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="50" y="45" width="20" height="20" fill="#ef4444" fill-opacity="0.4" stroke="#ef4444" stroke-width="1"/>
+                                <rect x="70" y="45" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="30" y="65" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="50" y="65" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <rect x="70" y="65" width="20" height="20" fill="#ef4444" fill-opacity="0.3"/>
+                                <text x="85" y="118" text-anchor="middle" fill="#ef4444" font-size="11">3×3 contiguous → RF ~71px</text>
+                            </g>
+
+                            <!-- Arrow between -->
+                            <text x="210" y="90" text-anchor="middle" fill="#60a5fa" font-size="18">→</text>
+
+                            <!-- Dilated conv -->
+                            <text x="330" y="18" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">Dilated (d=2, d=4)</text>
+                            <g transform="translate(240, 28)">
+                                <rect x="0" y="0" width="170" height="100" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                                <!-- Dilated 3x3 (skip 1 cell between each) -->
+                                <!-- center -->
+                                <rect x="70" y="40" width="20" height="20" fill="#22c55e" fill-opacity="0.5" stroke="#22c55e" stroke-width="2"/>
+                                <!-- dilated positions (skip 1) -->
+                                <rect x="20" y="0" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="70" y="0" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="120" y="0" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="20" y="40" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="120" y="40" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="20" y="80" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="70" y="80" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <rect x="120" y="80" width="20" height="20" fill="#22c55e" fill-opacity="0.3"/>
+                                <!-- gap indicators -->
+                                <line x1="40" y1="10" x2="70" y2="10" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>
+                                <line x1="40" y1="50" x2="70" y2="50" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>
+                                <text x="85" y="118" text-anchor="middle" fill="#22c55e" font-size="11">5×5 / 9×9 eff. → RF ~163px</text>
+                            </g>
+
+                            <!-- Bottom explanation -->
+                            <rect x="20" y="160" width="380" height="130" rx="12" fill="rgba(30,41,59,0.6)" stroke="#475569" stroke-width="1"/>
+                            <text x="210" y="182" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="bold">CNNBackboneDilated Architecture</text>
+                            <g font-size="11">
+                                <text x="40" y="205" fill="#60a5fa">Stem:  </text><text x="100" y="205" fill="#94a3b8">Conv(stride=2) → H/2</text>
+                                <text x="40" y="222" fill="#60a5fa">Stage 1:</text><text x="100" y="222" fill="#94a3b8">Conv(stride=2) → H/4</text>
+                                <text x="40" y="239" fill="#60a5fa">Stage 2:</text><text x="100" y="239" fill="#94a3b8">Conv(stride=2) → H/8</text>
+                                <text x="40" y="256" fill="#22c55e">Stage 3:</text><text x="100" y="256" fill="#22c55e">Conv(dilation=2) + Conv(dilation=4) → H/8  ← NEW</text>
+                                <text x="40" y="278" fill="#f59e0b">Output: </text><text x="100" y="278" fill="#f59e0b">stride=8 preserved, RF expanded to ~163px</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 animate-fade-up">
+            <div class="highlight-box">
+                <p class="text-base text-slate-200 text-center">
+                    <i class="fa-solid fa-expand-arrows-alt text-amber-400 mr-2"></i>
+                    <span class="text-amber-400 font-bold">Key:</span>
+                    Dilated convolutions skip positions with gaps, covering a 5×5 then 9×9 effective area at <span class="text-white font-semibold">zero extra cost</span> (no new parameters) — same 8× output stride, far richer features.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: SOLUTION 2 — NEIGHBORHOOD TOKEN EXTRACTION -->
+<!-- ============================================================ -->
+<section class="slide" data-index="4">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-5 text-center animate-fade-down">
+            <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-3">
+                Fix 2 / 2
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Neighborhood Aggregation: <span class="text-purple-400">From Point to Patch</span></h2>
+            <p class="text-slate-400 mt-2">Instead of a single feature at each selected position, collect a 3×3 neighborhood and average</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Left: Concept -->
+            <div class="animate-fade-right space-y-4">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-red-500/30">
+                    <h3 class="text-base font-bold text-red-400 mb-3">
+                        <i class="fa-solid fa-dot-circle mr-2"></i>Before: Single-Point Extraction
+                    </h3>
+                    <div class="flex justify-center mb-3">
+                        <svg width="200" height="100" viewBox="0 0 200 100">
+                            <rect x="10" y="10" width="80" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
+                            <!-- Grid -->
+                            <g stroke="#334155" stroke-width="1">
+                                <line x1="10" y1="37" x2="90" y2="37"/>
+                                <line x1="10" y1="63" x2="90" y2="63"/>
+                                <line x1="37" y1="10" x2="37" y2="90"/>
+                                <line x1="63" y1="10" x2="63" y2="90"/>
+                            </g>
+                            <!-- Selected point -->
+                            <circle cx="50" cy="50" r="7" fill="#ef4444" opacity="0.8"/>
+                            <text x="50" y="54" text-anchor="middle" fill="white" font-size="9">p</text>
+                            <!-- Arrow -->
+                            <line x1="100" y1="50" x2="125" y2="50" stroke="#60a5fa" stroke-width="2" marker-end="url(#arr3)"/>
+                            <!-- Token -->
+                            <rect x="130" y="30" width="60" height="40" rx="6" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+                            <text x="160" y="55" text-anchor="middle" fill="#ef4444" font-size="11">f(p)</text>
+                        </svg>
+                    </div>
+                    <p class="text-slate-400 text-sm">Token = feature at <em>exactly</em> the selected pixel. Encodes only local frequency/phase response — no spatial extent.</p>
+                </div>
+
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-purple-500/30">
+                    <h3 class="text-base font-bold text-purple-400 mb-3">
+                        <i class="fa-solid fa-border-all mr-2"></i>After: 3×3 Neighborhood Aggregation
+                    </h3>
+                    <div class="flex justify-center mb-3">
+                        <svg width="200" height="100" viewBox="0 0 200 100">
+                            <rect x="10" y="10" width="80" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
+                            <!-- Grid -->
+                            <g stroke="#334155" stroke-width="1">
+                                <line x1="10" y1="37" x2="90" y2="37"/>
+                                <line x1="10" y1="63" x2="90" y2="63"/>
+                                <line x1="37" y1="10" x2="37" y2="90"/>
+                                <line x1="63" y1="10" x2="63" y2="90"/>
+                            </g>
+                            <!-- 3x3 neighborhood -->
+                            <rect x="23" y="23" width="54" height="54" fill="#a855f7" fill-opacity="0.3" stroke="#a855f7" stroke-width="2" rx="3"/>
+                            <!-- Center point -->
+                            <circle cx="50" cy="50" r="5" fill="#a855f7"/>
+                            <!-- Small dots for 3x3 -->
+                            <g fill="#a855f7" fill-opacity="0.6">
+                                <circle cx="30" cy="30" r="3"/>
+                                <circle cx="50" cy="30" r="3"/>
+                                <circle cx="70" cy="30" r="3"/>
+                                <circle cx="30" cy="50" r="3"/>
+                                <circle cx="70" cy="50" r="3"/>
+                                <circle cx="30" cy="70" r="3"/>
+                                <circle cx="50" cy="70" r="3"/>
+                                <circle cx="70" cy="70" r="3"/>
+                            </g>
+                            <!-- Arrow -->
+                            <line x1="100" y1="50" x2="125" y2="50" stroke="#60a5fa" stroke-width="2" marker-end="url(#arr3)"/>
+                            <!-- Token -->
+                            <rect x="130" y="30" width="60" height="40" rx="6" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                            <text x="160" y="47" text-anchor="middle" fill="#a855f7" font-size="10">avg(3×3</text>
+                            <text x="160" y="60" text-anchor="middle" fill="#a855f7" font-size="10">neigh)</text>
+                        </svg>
+                    </div>
+                    <p class="text-slate-400 text-sm">Token = avg-pool over a 3×3 neighborhood of feature vectors. Captures local texture/structure around each selected position.</p>
+                </div>
+            </div>
+
+            <!-- Right: Implementation + combined effect -->
+            <div class="animate-fade-left space-y-4">
+                <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                    <h3 class="text-base font-bold text-slate-300 mb-3">
+                        <i class="fa-solid fa-code mr-2 text-cyan-400"></i>Implementation
+                    </h3>
+                    <div class="code-box text-xs">
+                        <p class="text-slate-500"># PhaseSelectiveTokenizer</p>
+                        <p class="text-cyan-300">if neighborhood_size > 1:</p>
+                        <p class="text-cyan-300 pl-4">pad = neighborhood_size // 2</p>
+                        <p class="text-cyan-300 pl-4">features = F.avg_pool2d(</p>
+                        <p class="text-cyan-300 pl-8">features,</p>
+                        <p class="text-cyan-300 pl-8">kernel_size=neighborhood_size,  # 3</p>
+                        <p class="text-cyan-300 pl-8">stride=1,</p>
+                        <p class="text-cyan-300 pl-8">padding=pad,</p>
+                        <p class="text-cyan-300 pl-4">)</p>
+                        <p class="text-slate-500 mt-2"># Then proceed with normal point sampling</p>
+                        <p class="text-emerald-300">tokens = features[:, :, y, x]  # 3×3 context</p>
+                    </div>
+                    <p class="text-slate-400 text-xs mt-3">
+                        Position selection remains <span class="text-white">identical</span> — only the feature at each selected location is now a spatially-pooled aggregate.
+                    </p>
+                </div>
+
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                    <h3 class="text-base font-bold text-emerald-400 mb-3">
+                        <i class="fa-solid fa-star mr-2"></i>Combined Effect
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-amber-500/30 flex items-center justify-center text-amber-400 font-bold flex-shrink-0 text-sm">1</div>
+                            <div>
+                                <p class="text-amber-400 font-semibold text-sm">Dilated backbone</p>
+                                <p class="text-slate-400 text-xs">Each feature already encodes context from ~163px radius</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-purple-500/30 flex items-center justify-center text-purple-400 font-bold flex-shrink-0 text-sm">2</div>
+                            <div>
+                                <p class="text-purple-400 font-semibold text-sm">Neighborhood aggregation</p>
+                                <p class="text-slate-400 text-xs">Averages 9 such dilated features → even richer token</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0 text-sm">→</div>
+                            <div>
+                                <p class="text-emerald-400 font-semibold text-sm">Comparable to Patch ViT</p>
+                                <p class="text-slate-400 text-xs">Each token now covers a region comparable to a 16×16 patch, but <span class="text-white">placed adaptively</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: UPDATED ARCHITECTURE PIPELINE -->
+<!-- ============================================================ -->
+<section class="slide" data-index="5">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-5 text-center animate-fade-down">
+            <div class="inline-block bg-blue-500/20 px-4 py-1 rounded-full text-blue-400 text-sm font-bold mb-3">
+                Updated Architecture
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Phase ViT v2 <span class="text-blue-400">Pipeline</span></h2>
+            <p class="text-slate-400 mt-2">Two targeted changes — everything else preserved</p>
+        </div>
+
+        <div class="animate-fade-up">
+            <div class="flex justify-center">
+                <svg width="960" height="310" viewBox="0 0 960 310">
+                    <defs>
+                        <marker id="arrowp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa"/>
+                        </marker>
+                        <linearGradient id="pipeGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.2"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Background flow -->
+                    <rect x="20" y="80" width="920" height="130" rx="60" fill="url(#pipeGrad2)" opacity="0.4"/>
+
+                    <!-- Stage 1: Input -->
+                    <g transform="translate(40, 65)">
+                        <rect x="0" y="0" width="110" height="160" rx="12" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                        <text x="55" y="60" text-anchor="middle" fill="#64748b" font-size="11">Image</text>
+                        <text x="55" y="75" text-anchor="middle" fill="#64748b" font-size="9">(B,3,H,W)</text>
+                        <text x="55" y="140" text-anchor="middle" fill="#475569" font-size="13" font-weight="bold">Input</text>
+                    </g>
+
+                    <!-- Arrow -->
+                    <line x1="160" y1="145" x2="188" y2="145" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowp)"/>
+
+                    <!-- Stage 2: CNN Dilated Backbone — HIGHLIGHTED -->
+                    <g transform="translate(195, 50)">
+                        <rect x="-4" y="-4" width="156" height="188" rx="16" fill="rgba(245,158,11,0.1)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+                        </rect>
+                        <rect x="0" y="0" width="148" height="180" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="74" y="35" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">CNN Backbone</text>
+                        <text x="74" y="52" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">Dilated</text>
+                        <text x="74" y="80" text-anchor="middle" fill="#64748b" font-size="9">d=2 + d=4</text>
+                        <text x="74" y="95" text-anchor="middle" fill="#64748b" font-size="9">RF: ~163px</text>
+                        <text x="74" y="112" text-anchor="middle" fill="#64748b" font-size="9">(B,C,H/8,W/8)</text>
+                        <text x="74" y="160" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="bold">★ UPGRADED</text>
+                    </g>
+
+                    <!-- Arrow -->
+                    <line x1="355" y1="145" x2="383" y2="145" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowp)"/>
+
+                    <!-- Stage 3: Phase Tokenizer with Neighborhood — HIGHLIGHTED -->
+                    <g transform="translate(390, 40)">
+                        <rect x="-4" y="-4" width="196" height="218" rx="16" fill="rgba(168,85,247,0.1)" stroke="#a855f7" stroke-width="2" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite"/>
+                        </rect>
+                        <rect x="0" y="0" width="188" height="210" rx="12" fill="#1e293b" stroke="#a855f7" stroke-width="3"/>
+                        <rect x="10" y="20" width="168" height="50" rx="6" fill="#0f172a" stroke="#c084fc" stroke-width="1"/>
+                        <text x="94" y="40" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="bold">Phase Filter Response</text>
+                        <text x="94" y="57" text-anchor="middle" fill="#64748b" font-size="8">(B, K, H/8, W/8)</text>
+                        <rect x="10" y="80" width="168" height="40" rx="6" fill="#0f172a" stroke="#c084fc" stroke-width="1"/>
+                        <text x="94" y="105" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="bold">STE Top-N Selection</text>
+                        <rect x="10" y="130" width="168" height="30" rx="6" fill="rgba(168,85,247,0.2)" stroke="#a855f7" stroke-width="1"/>
+                        <text x="94" y="150" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="bold">★ 3×3 Neighborhood Pool</text>
+                        <text x="94" y="185" text-anchor="middle" fill="#64748b" font-size="8">tokens(B,N,C) · positions(B,N,2)</text>
+                        <text x="94" y="198" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="bold">★ UPGRADED</text>
+                    </g>
+
+                    <!-- Arrow -->
+                    <line x1="590" y1="145" x2="618" y2="145" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowp)"/>
+
+                    <!-- Stage 4: RoPE Transformer — unchanged -->
+                    <g transform="translate(625, 65)">
+                        <rect x="0" y="0" width="130" height="160" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                        <text x="65" y="50" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">RoPE</text>
+                        <text x="65" y="65" text-anchor="middle" fill="#34d399" font-size="11" font-weight="bold">Transformer</text>
+                        <text x="65" y="82" text-anchor="middle" fill="#64748b" font-size="9">L blocks</text>
+                        <text x="65" y="140" text-anchor="middle" fill="#10b981" font-size="13" font-weight="bold">Unchanged</text>
+                    </g>
+
+                    <!-- Arrow -->
+                    <line x1="765" y1="145" x2="793" y2="145" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowp)"/>
+
+                    <!-- Stage 5: Output -->
+                    <g transform="translate(800, 65)">
+                        <rect x="0" y="0" width="110" height="160" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="55" y="55" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">MLP</text>
+                        <text x="55" y="70" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">Head</text>
+                        <text x="55" y="112" text-anchor="middle" fill="#64748b" font-size="9">(B,classes)</text>
+                        <text x="55" y="140" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="bold">Output</text>
+                    </g>
+
+                    <!-- Legend bottom -->
+                    <rect x="195" y="265" width="148" height="30" rx="6" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1"/>
+                    <text x="269" y="284" text-anchor="middle" fill="#fbbf24" font-size="11">★ Fix 1: Dilated backbone</text>
+
+                    <rect x="390" y="265" width="188" height="30" rx="6" fill="rgba(168,85,247,0.15)" stroke="#a855f7" stroke-width="1"/>
+                    <text x="484" y="284" text-anchor="middle" fill="#c084fc" font-size="11">★ Fix 2: Neighborhood tokens</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-3 gap-4 animate-fade-up">
+            <div class="bg-slate-800/50 p-3 rounded-xl border border-amber-500/30 text-center">
+                <span class="text-base font-bold text-amber-400">~163 px</span>
+                <p class="text-slate-400 text-xs">Dilated receptive field</p>
+            </div>
+            <div class="bg-slate-800/50 p-3 rounded-xl border border-purple-500/30 text-center">
+                <span class="text-base font-bold text-purple-400">3×3 = 9</span>
+                <p class="text-slate-400 text-xs">Features averaged per token</p>
+            </div>
+            <div class="bg-slate-800/50 p-3 rounded-xl border border-emerald-500/30 text-center">
+                <span class="text-base font-bold text-emerald-400">196 tokens</span>
+                <p class="text-slate-400 text-xs">Same count as Patch ViT baseline</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: ABLATION STUDY -->
+<!-- ============================================================ -->
+<section class="slide" data-index="6">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-5 text-center animate-fade-down">
+            <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                Ablation Study
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Each Fix Contributes — <span class="text-emerald-400">Combined Wins</span></h2>
+            <p class="text-slate-400 mt-2">Systematic ablation on CIFAR-100, same base model architecture, 100 epochs</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-8 items-center">
+            <!-- Left: Table -->
+            <div class="animate-fade-right">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-700/50">
+                            <th class="p-3 text-left text-slate-300 font-semibold rounded-tl-xl">Model Config</th>
+                            <th class="p-3 text-center text-slate-300 font-semibold">Dilated</th>
+                            <th class="p-3 text-center text-slate-300 font-semibold">Neigh-3</th>
+                            <th class="p-3 text-center text-slate-300 font-semibold rounded-tr-xl">CIFAR-100</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700 bg-slate-700/20">
+                            <td class="p-3 text-blue-400 font-bold">Patch ViT (baseline)</td>
+                            <td class="p-3 text-center text-slate-500">—</td>
+                            <td class="p-3 text-center text-slate-500">—</td>
+                            <td class="p-3 text-center text-blue-300 font-bold">63.80%</td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-slate-300">Phase ViT (point, 196)</td>
+                            <td class="p-3 text-center"><span class="text-red-400 text-base">✗</span></td>
+                            <td class="p-3 text-center"><span class="text-red-400 text-base">✗</span></td>
+                            <td class="p-3 text-center text-red-400">60.56% <span class="text-red-600 text-xs">↓3.24</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-slate-300">+ Dilated backbone</td>
+                            <td class="p-3 text-center"><span class="text-emerald-400 text-base">✓</span></td>
+                            <td class="p-3 text-center"><span class="text-red-400 text-base">✗</span></td>
+                            <td class="p-3 text-center text-amber-300">62.52% <span class="text-amber-500 text-xs">+1.96</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700">
+                            <td class="p-3 text-slate-300">+ Neighborhood-3 only</td>
+                            <td class="p-3 text-center"><span class="text-red-400 text-base">✗</span></td>
+                            <td class="p-3 text-center"><span class="text-emerald-400 text-base">✓</span></td>
+                            <td class="p-3 text-center text-cyan-300">67.20% <span class="text-cyan-500 text-xs">+6.64</span></td>
+                        </tr>
+                        <tr class="bg-emerald-500/15 border border-emerald-500/40">
+                            <td class="p-3 text-emerald-400 font-bold rounded-bl-xl">Dilated + Neighborhood-3</td>
+                            <td class="p-3 text-center"><span class="text-emerald-400 text-base">✓</span></td>
+                            <td class="p-3 text-center"><span class="text-emerald-400 text-base">✓</span></td>
+                            <td class="p-3 text-center rounded-br-xl">
+                                <span class="text-emerald-400 font-bold text-lg">68.20%</span>
+                                <span class="text-emerald-500 text-xs ml-1">+7.64</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-4 insight-box">
+                    <p class="text-sm text-slate-200">
+                        <i class="fa-solid fa-trophy text-emerald-400 mr-2"></i>
+                        <span class="text-emerald-400 font-bold">Phase ViT now beats Patch ViT by +4.40%</span> on CIFAR-100 while maintaining content-adaptive token placement!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Bar chart -->
+            <div class="animate-fade-left">
+                <div class="bg-slate-800/30 p-5 rounded-2xl border border-slate-700">
+                    <h3 class="text-base font-bold text-slate-300 mb-5 text-center">CIFAR-100 Accuracy Progression</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-blue-400">Patch ViT baseline</span>
+                                <span class="text-blue-400 font-bold">63.80%</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-blue-700 to-blue-600 text-blue-200" style="width:63.8%">63.80%</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-red-400">Phase ViT (point)</span>
+                                <span class="text-red-400 font-bold">60.56%</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-red-700 to-red-600 text-red-200" style="width:60.56%">60.56%</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-amber-400">+ Dilated only</span>
+                                <span class="text-amber-400 font-bold">62.52%</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-amber-700 to-amber-600 text-amber-200" style="width:62.52%">62.52%</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-cyan-400">+ Neigh-3 only</span>
+                                <span class="text-cyan-400 font-bold">67.20%</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-cyan-700 to-cyan-600 text-cyan-200" style="width:67.2%">67.20%</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-emerald-400 font-bold">Dilated + Neigh-3</span>
+                                <span class="text-emerald-400 font-bold">68.20%</span>
+                            </div>
+                            <div class="bar-bg">
+                                <div class="bar-fill bg-gradient-to-r from-emerald-600 to-emerald-500 text-emerald-100" style="width:68.2%">
+                                    <span class="font-bold">68.20%</span>
+                                    <span class="ml-1 text-emerald-300 text-xs">★ BEST</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Baseline reference line indicator -->
+                        <div class="flex items-center gap-2 mt-2">
+                            <div class="w-8 border-b-2 border-blue-400 border-dashed"></div>
+                            <span class="text-blue-400 text-xs">Patch ViT baseline = 63.80%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: SUMMARY & NEXT STEPS -->
+<!-- ============================================================ -->
+<section class="slide" data-index="9">
+    <div class="max-w-5xl mx-auto w-full">
+        <div class="mb-6 text-center animate-fade-down">
+            <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-3">
+                Summary
+            </div>
+            <h2 class="text-4xl font-bold font-serif text-white">Phase ViT v2: <span class="text-emerald-400">Mission Accomplished</span></h2>
+            <p class="text-slate-400 mt-2">Content-adaptive tokenization now beats the Patch ViT baseline on CIFAR-100</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Left: Story recap -->
+            <div class="animate-fade-right space-y-4">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700">
+                    <h3 class="text-base font-bold text-slate-300 mb-4 text-center">The Full Story</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded-full bg-red-500/30 flex items-center justify-center text-red-400 font-bold flex-shrink-0 text-xs">1</div>
+                            <div>
+                                <p class="text-red-400 font-semibold text-sm">Problem: 60.56% vs 63.80%</p>
+                                <p class="text-slate-500 text-xs">Phase ViT underperformed despite good position selection</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-400 font-bold flex-shrink-0 text-xs">2</div>
+                            <div>
+                                <p class="text-amber-400 font-semibold text-sm">Diagnosis: narrow receptive field</p>
+                                <p class="text-slate-500 text-xs">ViT attention maps revealed point sampling is too localized</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-400 font-bold flex-shrink-0 text-xs">3</div>
+                            <div>
+                                <p class="text-blue-400 font-semibold text-sm">Fix 1: Dilated backbone</p>
+                                <p class="text-slate-500 text-xs">Expanded feature RF from ~71px to ~163px via dilation=2,4</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded-full bg-purple-500/30 flex items-center justify-center text-purple-400 font-bold flex-shrink-0 text-xs">4</div>
+                            <div>
+                                <p class="text-purple-400 font-semibold text-sm">Fix 2: 3×3 neighborhood tokens</p>
+                                <p class="text-slate-500 text-xs">Aggregates 9 features per token — spatial extent like a patch</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0 text-xs">★</div>
+                            <div>
+                                <p class="text-emerald-400 font-semibold text-sm">Result: 68.20% (+7.64%)</p>
+                                <p class="text-slate-500 text-xs">Phase ViT v2 beats Patch ViT by +4.40% on CIFAR-100</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Final results + next steps -->
+            <div class="animate-fade-left space-y-4">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-emerald-500/30">
+                    <h3 class="text-base font-bold text-emerald-400 mb-4 text-center">Final Benchmark</h3>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-slate-700/50">
+                                <th class="p-2 text-left text-slate-400 text-xs">Model</th>
+                                <th class="p-2 text-center text-slate-400 text-xs">Shapes</th>
+                                <th class="p-2 text-center text-slate-400 text-xs">CIFAR-100</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-slate-700 bg-slate-700/20">
+                                <td class="p-2 text-blue-400 text-xs font-bold">Patch ViT baseline</td>
+                                <td class="p-2 text-center text-slate-300 text-xs">92.50%</td>
+                                <td class="p-2 text-center text-blue-300 text-xs font-bold">63.80%</td>
+                            </tr>
+                            <tr class="border-b border-slate-700">
+                                <td class="p-2 text-slate-400 text-xs">Phase ViT v1 (point)</td>
+                                <td class="p-2 text-center text-slate-400 text-xs">93.88%</td>
+                                <td class="p-2 text-center text-red-400 text-xs">60.56%</td>
+                            </tr>
+                            <tr class="bg-emerald-500/15">
+                                <td class="p-2 text-emerald-400 text-xs font-bold">Phase ViT v2 ★</td>
+                                <td class="p-2 text-center text-emerald-300 text-xs font-bold">95.88%</td>
+                                <td class="p-2 text-center text-emerald-300 text-xs font-bold">68.20%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div class="bg-slate-900/50 p-3 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-emerald-400">+7.64%</div>
+                            <div class="text-slate-500 text-xs">CIFAR-100 gain</div>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-emerald-400">+4.40%</div>
+                            <div class="text-slate-500 text-xs">vs. Patch ViT baseline</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 animate-fade-up">
+            <div class="insight-box">
+                <p class="text-base text-slate-200 text-center">
+                    <i class="fa-solid fa-lightbulb text-green-400 mr-2"></i>
+                    <span class="text-green-400 font-bold">Core Lesson:</span>
+                    Content-adaptive token <span class="text-white font-semibold">positioning</span> is valuable, but each token must also carry sufficient <span class="text-white font-semibold">spatial context</span>.
+                    Dilated features + neighborhood aggregation bridges Phase ViT's receptive field gap while preserving its adaptive placement advantage.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    document.getElementById('total-pages').textContent = totalSlides;
+
+    const navDotsContainer = document.getElementById('nav-dots');
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+        dot.onclick = function(e) { e.stopPropagation(); goToSlide(i); };
+        navDotsContainer.appendChild(dot);
+    }
+
+    function updateSlide() {
+        slides.forEach((slide, index) => {
+            slide.classList.toggle('active', index === currentSlide);
+        });
+        document.getElementById('current-page').textContent = currentSlide + 1;
+        document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentSlide);
+        });
+    }
+    function goToSlide(index) {
+        currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+        updateSlide();
+    }
+    function nextSlide() { if (currentSlide < totalSlides - 1) { currentSlide++; updateSlide(); } }
+    function prevSlide() { if (currentSlide > 0) { currentSlide--; updateSlide(); } }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); nextSlide(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prevSlide(); }
+        else if (e.key === 'Home') { e.preventDefault(); goToSlide(0); }
+        else if (e.key === 'End') { e.preventDefault(); goToSlide(totalSlides - 1); }
+        else if (e.key === 'Escape') { closeLightbox(); }
+    });
+
+    // Attention example tabs
+    function showAttnExample(name) {
+        document.querySelectorAll('.attn-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('[id^="btn-attn-"]').forEach(btn => {
+            btn.classList.remove('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-500/50', 'attn-tab-active');
+            btn.classList.add('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+        });
+        const el = document.getElementById('attn-' + name);
+        if (el) el.classList.remove('hidden');
+        const btn = document.getElementById('btn-attn-' + name);
+        if (btn) {
+            btn.classList.remove('bg-slate-700/50', 'text-slate-400', 'border-slate-600/50');
+            btn.classList.add('bg-cyan-500/30', 'text-cyan-400', 'border-cyan-500/50', 'attn-tab-active');
+        }
+    }
+
+    // Lightbox
+    function openLightbox(src) {
+        document.getElementById('lightbox-img').src = src;
+        document.getElementById('lightbox').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    updateSlide();
+</script>
+</body>
+</html>
