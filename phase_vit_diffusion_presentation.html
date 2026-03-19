@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase ViT + Diffusion LLM — Future Directions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1a2d4a 50%,#0f172a 100%);min-height:100vh;color:#fff}
+        .slide{display:none;min-height:100vh;padding:36px 60px 80px;position:relative}
+        .slide.active{display:flex;flex-direction:column;justify-content:center}
+        .slide-footer{position:fixed;bottom:0;left:0;right:0;padding:15px 60px;font-size:14px;background:linear-gradient(to top,rgba(15,23,42,.95),rgba(15,23,42,.7),transparent);z-index:100}
+        .nav-buttons{position:fixed;bottom:50%;transform:translateY(50%);z-index:200}
+        .nav-buttons.left{left:20px}.nav-buttons.right{right:20px}
+        .nav-btn{width:50px;height:50px;border-radius:50%;background:rgba(59,130,246,.3);border:2px solid rgba(59,130,246,.5);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
+        .nav-btn:hover{background:rgba(59,130,246,.6);transform:scale(1.1)}
+        .nav-dots{position:fixed;right:30px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:200}
+        .nav-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .3s;border:none}
+        .nav-dot.active{background:#3b82f6;transform:scale(1.3)}
+        .code-box{background:rgba(30,41,59,.8);border:1px solid rgba(100,116,139,.3);border-radius:12px;padding:14px;font-family:'Fira Code',monospace;font-size:12px;overflow-x:auto}
+        .highlight-box{background:linear-gradient(135deg,rgba(251,191,36,.1),rgba(245,158,11,.1));border-left:5px solid #f59e0b;padding:18px;border-radius:0 12px 12px 0}
+        .insight-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:5px solid #22c55e;padding:18px;border-radius:0 12px 12px 0}
+        .warning-box{background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(220,38,38,.1));border-left:5px solid #ef4444;padding:18px;border-radius:0 12px 12px 0}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeLeft{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes fadeRight{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+        .animate-fade-up{animation:fadeUp .6s ease-out forwards}
+        .animate-fade-down{animation:fadeDown .6s ease-out forwards}
+        .animate-fade-left{animation:fadeLeft .6s ease-out forwards}
+        .animate-fade-right{animation:fadeRight .6s ease-out forwards}
+        .lightbox{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:1000;justify-content:center;align-items:center;cursor:zoom-out}
+        .lightbox.active{display:flex}
+        .lightbox img{max-width:95%;max-height:95%;object-fit:contain;border-radius:8px}
+        .lightbox-close{position:absolute;top:20px;right:30px;font-size:40px;color:#fff;cursor:pointer;opacity:.7}
+        .lightbox-close:hover{opacity:1}
+        .zoomable{cursor:zoom-in;transition:transform .2s,box-shadow .2s}
+        .zoomable:hover{transform:scale(1.02);box-shadow:0 0 15px rgba(6,182,212,.3)}
+        .bar-bg{background:rgba(30,41,59,.8);border-radius:8px;overflow:hidden;height:28px;position:relative}
+        .bar-fill{height:100%;border-radius:8px;transition:width 1s ease-out;display:flex;align-items:center;padding-left:10px;font-size:13px;font-weight:600}
+    </style>
+</head>
+<body>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- Nav -->
+<div class="nav-buttons left"><button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button></div>
+<div class="nav-buttons right"><button class="nav-btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button></div>
+<div class="nav-dots" id="nav-dots"></div>
+
+<!-- Footer -->
+<footer class="slide-footer">
+    <div style="display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;gap:1rem">
+        <div class="text-slate-400"><span class="text-slate-300 font-medium">Phase ViT + Diffusion</span></div>
+        <div class="text-slate-400 font-medium tracking-wide text-center">Future Directions: Adaptive Tokens for Diffusion LLMs</div>
+        <div class="flex items-center justify-end gap-4 text-slate-400">
+            <span class="text-slate-300 font-mono"><span id="current-page">1</span> / <span id="total-pages">3</span></span>
+        </div>
+    </div>
+</footer>
+
+<!-- ============ SLIDE 0: HOW DIFFUSION LLM WORKS ============ -->
+<section class="slide active" data-index="0">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-3 text-center animate-fade-down">
+            <div class="inline-block bg-cyan-500/20 px-4 py-1 rounded-full text-cyan-400 text-sm font-bold mb-2">LaViDa (NeurIPS 2025)</div>
+            <h2 class="text-3xl font-bold font-serif text-white">Diffusion LLM: <span class="text-cyan-400">Not Next-Token</span>, but <span class="text-purple-400">Parallel Denoising</span></h2>
+            <p class="text-slate-400 mt-1 text-sm">LaViDa replaces autoregressive decoding with discrete diffusion — denoises all tokens simultaneously via iterative refinement</p>
+        </div>
+
+        <!-- AR vs Diffusion comparison -->
+        <div class="grid grid-cols-2 gap-5 mb-4 animate-fade-up">
+            <!-- Left: Autoregressive -->
+            <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-600">
+                <h3 class="text-sm font-bold text-slate-400 mb-3 text-center"><i class="fa-solid fa-arrow-right mr-1"></i>Autoregressive (LLaVA, GPT-4V)</h3>
+                <svg width="100%" viewBox="0 0 380 105">
+                    <text x="10" y="15" fill="#94a3b8" font-size="8" font-weight="bold">Generate one token at a time, left → right:</text>
+                    <!-- Step rows -->
+                    <g font-size="8" font-family="'Fira Code',monospace">
+                        <!-- Row 1 -->
+                        <text x="10" y="35" fill="#64748b" font-size="7">t=1</text>
+                        <rect x="35" y="24" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="46" y="35" text-anchor="middle" fill="#22c55e">A</text>
+                        <rect x="62" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="73" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="89" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="100" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="116" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="127" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="143" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="154" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="170" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="181" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="197" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="208" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="224" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="235" y="35" text-anchor="middle" fill="#475569">?</text>
+                        <!-- Row 2 -->
+                        <text x="10" y="55" fill="#64748b" font-size="7">t=2</text>
+                        <rect x="35" y="44" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="46" y="55" text-anchor="middle" fill="#22c55e">A</text>
+                        <rect x="62" y="44" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="73" y="55" text-anchor="middle" fill="#22c55e">dog</text>
+                        <rect x="89" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="100" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="116" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="127" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="143" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="154" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="170" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="181" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="197" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="208" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="224" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="235" y="55" text-anchor="middle" fill="#475569">?</text>
+                        <!-- Row 3 -->
+                        <text x="10" y="75" fill="#64748b" font-size="7">t=3</text>
+                        <rect x="35" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="46" y="75" text-anchor="middle" fill="#22c55e">A</text>
+                        <rect x="62" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="73" y="75" text-anchor="middle" fill="#22c55e">dog</text>
+                        <rect x="89" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="100" y="75" text-anchor="middle" fill="#22c55e">with</text>
+                        <rect x="116" y="64" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="127" y="75" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="143" y="64" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="154" y="75" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="170" y="64" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="181" y="75" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="197" y="64" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="208" y="75" text-anchor="middle" fill="#475569">?</text>
+                        <rect x="224" y="64" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="235" y="75" text-anchor="middle" fill="#475569">?</text>
+                    </g>
+                    <!-- Arrow showing sequential -->
+                    <text x="270" y="55" fill="#64748b" font-size="8">... 8 steps</text>
+                    <text x="270" y="68" fill="#64748b" font-size="8">for 8 tokens</text>
+                    <text x="10" y="98" fill="#ef4444" font-size="8" font-weight="bold">Slow: 1 token/step, causal mask (left-to-right only)</text>
+                </svg>
+            </div>
+            <!-- Right: Diffusion -->
+            <div class="bg-slate-800/50 p-4 rounded-2xl border border-cyan-500/40">
+                <h3 class="text-sm font-bold text-cyan-400 mb-3 text-center"><i class="fa-solid fa-shuffle mr-1"></i>Discrete Diffusion (LaViDa)</h3>
+                <svg width="100%" viewBox="0 0 380 105">
+                    <text x="10" y="15" fill="#94a3b8" font-size="8" font-weight="bold">Denoise multiple tokens per step, any order:</text>
+                    <g font-size="8" font-family="'Fira Code',monospace">
+                        <!-- Row 1: all masked -->
+                        <text x="10" y="35" fill="#64748b" font-size="7">t=1</text>
+                        <rect x="35" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="46" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="62" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="73" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="89" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="100" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="116" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="127" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="143" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="154" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="170" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="181" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="197" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="208" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="224" y="24" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="235" y="35" text-anchor="middle" fill="#475569">[M]</text>
+                        <!-- Row 2: some unmasked (non-sequential!) -->
+                        <text x="10" y="55" fill="#64748b" font-size="7">t=2</text>
+                        <rect x="35" y="44" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="46" y="55" text-anchor="middle" fill="#22c55e">A</text>
+                        <rect x="62" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="73" y="55" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="89" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="100" y="55" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="116" y="44" width="22" height="16" rx="3" fill="#fbbf24" fill-opacity=".3" stroke="#fbbf24"/><text x="127" y="55" text-anchor="middle" fill="#fbbf24">brown</text>
+                        <rect x="143" y="44" width="22" height="16" rx="3" fill="#fbbf24" fill-opacity=".3" stroke="#fbbf24"/><text x="154" y="55" text-anchor="middle" fill="#fbbf24">eyes</text>
+                        <rect x="170" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="181" y="55" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="197" y="44" width="22" height="16" rx="3" fill="#334155" stroke="#475569"/><text x="208" y="55" text-anchor="middle" fill="#475569">[M]</text>
+                        <rect x="224" y="44" width="22" height="16" rx="3" fill="#a855f7" fill-opacity=".3" stroke="#a855f7"/><text x="235" y="55" text-anchor="middle" fill="#a855f7">couch</text>
+                        <!-- Row 3: more filled -->
+                        <text x="10" y="75" fill="#64748b" font-size="7">t=3</text>
+                        <rect x="35" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="46" y="75" text-anchor="middle" fill="#22c55e">A</text>
+                        <rect x="62" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="73" y="75" text-anchor="middle" fill="#22c55e">dog</text>
+                        <rect x="89" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="100" y="75" text-anchor="middle" fill="#22c55e">with</text>
+                        <rect x="116" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="127" y="75" text-anchor="middle" fill="#22c55e">brown</text>
+                        <rect x="143" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="154" y="75" text-anchor="middle" fill="#22c55e">eyes</text>
+                        <rect x="170" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="181" y="75" text-anchor="middle" fill="#22c55e">on</text>
+                        <rect x="197" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="208" y="75" text-anchor="middle" fill="#22c55e">red</text>
+                        <rect x="224" y="64" width="22" height="16" rx="3" fill="#22c55e" fill-opacity=".3" stroke="#22c55e"/><text x="235" y="75" text-anchor="middle" fill="#22c55e">couch</text>
+                    </g>
+                    <text x="270" y="55" fill="#22d3ee" font-size="8" font-weight="bold">3 steps</text>
+                    <text x="270" y="68" fill="#22d3ee" font-size="8" font-weight="bold">for 8 tokens!</text>
+                    <text x="10" y="98" fill="#22c55e" font-size="8" font-weight="bold">Fast: N tokens/step, bidirectional attention, any-order</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- LaViDa pipeline -->
+        <div class="animate-fade-up">
+            <div class="bg-slate-800/40 p-4 rounded-2xl border border-cyan-500/30">
+                <h3 class="text-sm font-bold text-cyan-400 mb-3 text-center"><i class="fa-solid fa-diagram-project mr-1"></i>LaViDa Pipeline: SigLIP → MLP → Diffusion LM</h3>
+                <svg width="100%" viewBox="0 0 900 110">
+                    <defs>
+                        <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#60a5fa"/></marker>
+                    </defs>
+                    <!-- Image -->
+                    <g transform="translate(10,10)"><rect width="80" height="80" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+                        <text x="40" y="40" text-anchor="middle" fill="#64748b" font-size="9">Image</text>
+                        <text x="40" y="55" text-anchor="middle" fill="#64748b" font-size="7">768×768</text></g>
+                    <line x1="95" y1="50" x2="120" y2="50" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr)"/>
+                    <!-- SigLIP -->
+                    <g transform="translate(125,10)"><rect width="110" height="80" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+                        <text x="55" y="30" text-anchor="middle" fill="#60a5fa" font-size="9" font-weight="bold">SigLIP-400M</text>
+                        <text x="55" y="45" text-anchor="middle" fill="#64748b" font-size="7">5 views × 729</text>
+                        <text x="55" y="58" text-anchor="middle" fill="#64748b" font-size="7">→ pool → 980</text>
+                        <text x="55" y="73" text-anchor="middle" fill="#3b82f6" font-size="8" font-weight="bold">Fixed grid</text></g>
+                    <line x1="240" y1="50" x2="265" y2="50" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr)"/>
+                    <!-- MLP -->
+                    <g transform="translate(270,20)"><rect width="65" height="60" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+                        <text x="32" y="30" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="bold">MLP</text>
+                        <text x="32" y="45" text-anchor="middle" fill="#64748b" font-size="7">projector</text></g>
+                    <line x1="340" y1="50" x2="365" y2="50" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr)"/>
+                    <!-- Diffusion LM -->
+                    <g transform="translate(370,5)"><rect width="280" height="90" rx="10" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                        <text x="140" y="22" text-anchor="middle" fill="#22d3ee" font-size="10" font-weight="bold">Diffusion Language Model (LLaDA-8B)</text>
+                        <text x="140" y="38" text-anchor="middle" fill="#94a3b8" font-size="8">Bidirectional attention (non-causal)</text>
+                        <text x="140" y="52" text-anchor="middle" fill="#94a3b8" font-size="8">Iterative denoising: X₁(all masked) → X₀(clean)</text>
+</g>
+                    <line x1="655" y1="50" x2="680" y2="50" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr)"/>
+                    <!-- Output -->
+                    <g transform="translate(685,15)"><rect width="90" height="70" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="45" y="30" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="bold">Output</text>
+                        <text x="45" y="45" text-anchor="middle" fill="#64748b" font-size="7">VQA, Caption</text>
+                        <text x="45" y="58" text-anchor="middle" fill="#64748b" font-size="7">Reasoning</text></g>
+                    <!-- Highlight the fixed tokens limitation -->
+                    <rect x="122" y="7" width="116" height="86" rx="10" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3">
+                        <animate attributeName="stroke-opacity" values="1;.3;1" dur="2s" repeatCount="indefinite"/>
+                    </rect>
+                    <text x="180" y="105" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="bold">980 fixed tokens — same for every diffusion step</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="mt-3 highlight-box animate-fade-up">
+            <p class="text-sm text-slate-200 text-center"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-2"></i>
+            <span class="text-amber-400 font-bold">Key observation:</span> Diffusion denoises "eyes" and "couch" at <span class="text-white font-semibold">different steps in any order</span> — but the visual tokens are <span class="text-white font-semibold">always the same 980 fixed patches</span>. The vision encoder does not adapt to what the LM is currently trying to reconstruct.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SLIDE 1: PROGRESSIVE DENOISING DEMO ============ -->
+<section class="slide" data-index="1">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-3 text-center animate-fade-down">
+            <div class="inline-block bg-purple-500/20 px-4 py-1 rounded-full text-purple-400 text-sm font-bold mb-2">Progressive Demo</div>
+            <h2 class="text-3xl font-bold font-serif text-white">Denoising Steps → <span class="text-purple-400">Adaptive Token Selection</span></h2>
+            <p class="text-slate-400 mt-1 text-sm">As more text is denoised, Phase ViT progressively selects <span class="text-purple-300">more visual tokens</span> to ground the increasing text content</p>
+        </div>
+        <div class="animate-fade-up">
+            <!-- Step-by-step progressive diagram -->
+            <div class="grid grid-cols-3 gap-4">
+                <!-- STEP 1 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-amber-500/30">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-7 h-7 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">1</div>
+                        <h3 class="text-sm font-bold text-amber-400">Denoise: "A golden [M] [M] [M] [M]"</h3>
+                    </div>
+                    <svg width="100%" viewBox="0 0 280 230">
+                        <!-- Dog scene -->
+                        <rect x="10" y="5" width="260" height="145" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                        <!-- Sky -->
+                        <rect x="10" y="5" width="260" height="45" rx="10" fill="#1e3a5f" fill-opacity=".4"/>
+                        <!-- Grass -->
+                        <rect x="10" y="105" width="260" height="45" rx="0" fill="#166534" fill-opacity=".3"/>
+                        <rect x="10" y="140" width="260" height="10" rx="0 0 10 10" fill="#166534" fill-opacity=".3"/>
+                        <!-- Dog body -->
+                        <ellipse cx="140" cy="85" rx="55" ry="35" fill="#b45309" fill-opacity=".6" stroke="#d97706" stroke-width="1.5"/>
+                        <!-- Dog head -->
+                        <circle cx="185" cy="55" r="22" fill="#b45309" fill-opacity=".6" stroke="#d97706" stroke-width="1.5"/>
+                        <!-- Ears -->
+                        <ellipse cx="172" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".5" transform="rotate(-15,172,38)"/>
+                        <ellipse cx="198" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".5" transform="rotate(15,198,38)"/>
+                        <!-- Eyes -->
+                        <circle cx="178" cy="52" r="3" fill="#1e293b"/><circle cx="192" cy="52" r="3" fill="#1e293b"/>
+                        <circle cx="179" cy="51" r="1" fill="white"/><circle cx="193" cy="51" r="1" fill="white"/>
+                        <!-- Nose -->
+                        <ellipse cx="185" cy="62" rx="4" ry="3" fill="#1e293b"/>
+                        <!-- Legs -->
+                        <rect x="100" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".5"/><rect x="120" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".5"/><rect x="155" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".5"/><rect x="175" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".5"/>
+                        <!-- Tail -->
+                        <path d="M85,75 Q65,50 70,35" fill="none" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+                        <!-- Couch in back -->
+                        <rect x="30" y="88" width="220" height="22" rx="6" fill="#991b1b" fill-opacity=".4" stroke="#dc2626" stroke-width="1" stroke-opacity=".3"/>
+                        <!-- HIGHLIGHT: whole body (general) -->
+                        <rect x="70" y="30" width="145" height="115" rx="8" fill="#f59e0b" fill-opacity=".15" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3"/>
+                        <!-- Few token dots — only 3 tokens selected -->
+                        <g fill="#f59e0b" fill-opacity=".7">
+                            <circle cx="130" cy="70" r="5"/><circle cx="160" cy="85" r="5"/><circle cx="145" cy="55" r="5"/>
+                        </g>
+                        <text x="140" y="165" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="bold">Few tokens (N=3): rough body region</text>
+                    </svg>
+                    <!-- Text tokens -->
+                    <div class="flex flex-wrap gap-1 mt-2 justify-center">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs border border-slate-600/40">[M]</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs border border-slate-600/40">[M]</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs border border-slate-600/40">[M]</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs border border-slate-600/40">[M]</span>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-purple-500/30">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-7 h-7 rounded-full bg-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-sm">2</div>
+                        <h3 class="text-sm font-bold text-purple-400">Denoise: "... with brown eyes [M]"</h3>
+                    </div>
+                    <svg width="100%" viewBox="0 0 280 230">
+                        <rect x="10" y="5" width="260" height="145" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                        <rect x="10" y="5" width="260" height="45" rx="10" fill="#1e3a5f" fill-opacity=".4"/>
+                        <rect x="10" y="105" width="260" height="45" rx="0" fill="#166534" fill-opacity=".3"/>
+                        <rect x="10" y="140" width="260" height="10" rx="0 0 10 10" fill="#166534" fill-opacity=".3"/>
+                        <ellipse cx="140" cy="85" rx="55" ry="35" fill="#b45309" fill-opacity=".4" stroke="#d97706" stroke-width="1" stroke-opacity=".4"/>
+                        <circle cx="185" cy="55" r="22" fill="#b45309" fill-opacity=".4" stroke="#d97706" stroke-width="1" stroke-opacity=".4"/>
+                        <ellipse cx="172" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".3" transform="rotate(-15,172,38)"/>
+                        <ellipse cx="198" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".3" transform="rotate(15,198,38)"/>
+                        <!-- Eyes highlighted! -->
+                        <circle cx="178" cy="52" r="3" fill="#1e293b"/><circle cx="192" cy="52" r="3" fill="#1e293b"/>
+                        <circle cx="179" cy="51" r="1" fill="white"/><circle cx="193" cy="51" r="1" fill="white"/>
+                        <ellipse cx="185" cy="62" rx="4" ry="3" fill="#1e293b"/>
+                        <rect x="100" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".3"/><rect x="120" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".3"/><rect x="155" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".3"/><rect x="175" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".3"/>
+                        <path d="M85,75 Q65,50 70,35" fill="none" stroke="#d97706" stroke-width="3" stroke-linecap="round" stroke-opacity=".3"/>
+                        <rect x="30" y="88" width="220" height="22" rx="6" fill="#991b1b" fill-opacity=".2"/>
+                        <!-- HIGHLIGHT: eye region zoomed -->
+                        <rect x="163" y="38" width="45" height="30" rx="6" fill="#a855f7" fill-opacity=".2" stroke="#a855f7" stroke-width="2.5" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-opacity" values="1;.4;1" dur="1.5s" repeatCount="indefinite"/>
+                        </rect>
+                        <!-- More token dots — 6 on eyes + body context -->
+                        <g fill="#a855f7" fill-opacity=".8">
+                            <circle cx="175" cy="48" r="4"/><circle cx="185" cy="45" r="4"/><circle cx="195" cy="48" r="4"/><circle cx="180" cy="55" r="4"/><circle cx="190" cy="55" r="4"/><circle cx="185" cy="62" r="3"/>
+                        </g>
+                        <g fill="#a855f7" fill-opacity=".35">
+                            <circle cx="140" cy="75" r="4"/><circle cx="155" cy="85" r="4"/><circle cx="130" cy="60" r="4"/>
+                        </g>
+                        <text x="140" y="165" text-anchor="middle" fill="#a855f7" font-size="9" font-weight="bold">More tokens (N=9): eyes + body context</text>
+                    </svg>
+                    <div class="flex flex-wrap gap-1 mt-2 justify-center">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40 font-bold">with</span>
+                        <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40 font-bold">brown</span>
+                        <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40 font-bold">eyes</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs border border-slate-600/40">[M]</span>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-emerald-500/30">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-7 h-7 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm">3</div>
+                        <h3 class="text-sm font-bold text-emerald-400">Denoise: "... on a red couch"</h3>
+                    </div>
+                    <svg width="100%" viewBox="0 0 280 230">
+                        <rect x="10" y="5" width="260" height="145" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                        <rect x="10" y="5" width="260" height="45" rx="10" fill="#1e3a5f" fill-opacity=".4"/>
+                        <rect x="10" y="105" width="260" height="45" rx="0" fill="#166534" fill-opacity=".3"/>
+                        <rect x="10" y="140" width="260" height="10" rx="0 0 10 10" fill="#166534" fill-opacity=".3"/>
+                        <ellipse cx="140" cy="85" rx="55" ry="35" fill="#b45309" fill-opacity=".3" stroke="#d97706" stroke-width="1" stroke-opacity=".3"/>
+                        <circle cx="185" cy="55" r="22" fill="#b45309" fill-opacity=".3" stroke="#d97706" stroke-width="1" stroke-opacity=".3"/>
+                        <ellipse cx="172" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".2" transform="rotate(-15,172,38)"/>
+                        <ellipse cx="198" cy="38" rx="8" ry="12" fill="#92400e" fill-opacity=".2" transform="rotate(15,198,38)"/>
+                        <circle cx="178" cy="52" r="3" fill="#1e293b" opacity=".4"/><circle cx="192" cy="52" r="3" fill="#1e293b" opacity=".4"/>
+                        <ellipse cx="185" cy="62" rx="4" ry="3" fill="#1e293b" opacity=".4"/>
+                        <rect x="100" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".2"/><rect x="120" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".2"/><rect x="155" y="110" width="12" height="30" rx="5" fill="#b45309" fill-opacity=".2"/><rect x="175" y="112" width="12" height="28" rx="5" fill="#b45309" fill-opacity=".2"/>
+                        <path d="M85,75 Q65,50 70,35" fill="none" stroke="#d97706" stroke-width="3" stroke-linecap="round" stroke-opacity=".2"/>
+                        <!-- Couch highlighted! -->
+                        <rect x="30" y="88" width="220" height="22" rx="6" fill="#991b1b" fill-opacity=".4" stroke="#dc2626" stroke-width="1" stroke-opacity=".3"/>
+                        <rect x="25" y="83" width="230" height="32" rx="8" fill="#22c55e" fill-opacity=".12" stroke="#22c55e" stroke-width="2.5" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-opacity" values="1;.4;1" dur="1.5s" repeatCount="indefinite"/>
+                        </rect>
+                        <!-- Most tokens — couch + dog + eyes, full coverage -->
+                        <g fill="#22c55e" fill-opacity=".8">
+                            <circle cx="50" cy="97" r="4"/><circle cx="90" cy="95" r="4"/><circle cx="130" cy="97" r="4"/><circle cx="170" cy="95" r="4"/><circle cx="210" cy="97" r="4"/><circle cx="240" cy="95" r="4"/>
+                        </g>
+                        <g fill="#22c55e" fill-opacity=".5">
+                            <circle cx="185" cy="50" r="3"/><circle cx="175" cy="50" r="3"/><circle cx="195" cy="50" r="3"/>
+                            <circle cx="130" cy="70" r="3"/><circle cx="155" cy="80" r="3"/><circle cx="145" cy="60" r="3"/><circle cx="165" cy="90" r="3"/><circle cx="110" cy="85" r="3"/>
+                        </g>
+                        <text x="140" y="165" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="bold">Most tokens (N=17): couch + dog + eyes</text>
+                    </svg>
+                    <div class="flex flex-wrap gap-1 mt-2 justify-center">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">with</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">brown</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">eyes</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40 font-bold">on a red couch</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 insight-box animate-fade-up">
+            <p class="text-sm text-slate-200 text-center"><i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-2"></i>
+            <span class="text-purple-400 font-bold">Key idea:</span> As diffusion reveals more text, the Phase tokenizer <span class="text-white font-semibold">progressively selects more visual tokens</span> — starting with a few tokens for initial context, growing to full coverage as the description becomes richer. This helps the model <span class="text-white font-semibold">focus on relevant visual regions</span> when reasoning about them.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SLIDE 2: DUAL DIFFUSION — TEXT → IMAGE CO-GENERATION ============ -->
+<section class="slide" data-index="2">
+    <div class="max-w-6xl mx-auto w-full">
+        <div class="mb-3 text-center animate-fade-down">
+            <div class="inline-block bg-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-sm font-bold mb-2">Further Extension</div>
+            <h2 class="text-3xl font-bold font-serif text-white">Dual Diffusion: <span class="text-emerald-400">Text Denoising</span> → <span class="text-pink-400">Image Generation</span></h2>
+            <p class="text-slate-400 mt-1 text-sm">Each denoised text token becomes conditioning for a T2I diffusion model — text and image co-generated progressively</p>
+        </div>
+
+        <div class="animate-fade-up">
+            <div class="grid grid-cols-3 gap-4">
+                <!-- STEP 1 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-amber-500/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xs">1</div>
+                        <h3 class="text-xs font-bold text-amber-400">Text denoised: "A golden"</h3>
+                    </div>
+                    <!-- Text tokens row -->
+                    <div class="flex flex-wrap gap-1 mb-3 justify-center">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs">[M]</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs">[M]</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs">[M]</span>
+                    </div>
+                    <!-- Arrow down -->
+                    <div class="text-center text-pink-400 text-xs mb-2"><i class="fa-solid fa-arrow-down"></i> feed to T2I</div>
+                    <!-- Generated image: vague golden blob -->
+                    <svg width="100%" viewBox="0 0 240 140">
+                        <rect x="5" y="5" width="230" height="130" rx="10" fill="#1e293b" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <!-- Noisy/vague golden shape -->
+                        <ellipse cx="120" cy="70" rx="70" ry="45" fill="#b45309" fill-opacity=".15"/>
+                        <ellipse cx="120" cy="70" rx="50" ry="30" fill="#b45309" fill-opacity=".2"/>
+                        <ellipse cx="120" cy="70" rx="30" ry="18" fill="#d97706" fill-opacity=".25"/>
+                        <!-- Noise dots -->
+                        <g fill="#d97706" fill-opacity=".1">
+                            <circle cx="60" cy="40" r="8"/><circle cx="180" cy="50" r="10"/><circle cx="90" cy="100" r="7"/><circle cx="160" cy="95" r="9"/>
+                        </g>
+                        <text x="120" y="128" text-anchor="middle" fill="#ec4899" font-size="9" font-style="italic">vague golden shape...</text>
+                    </svg>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-purple-500/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded-full bg-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs">2</div>
+                        <h3 class="text-xs font-bold text-purple-400">Text: "A golden dog with brown eyes"</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mb-3 justify-center">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40">dog</span>
+                        <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40">with</span>
+                        <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/40">brown eyes</span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-500 text-xs">[M]</span>
+                    </div>
+                    <div class="text-center text-pink-400 text-xs mb-2"><i class="fa-solid fa-arrow-down"></i> feed to T2I</div>
+                    <!-- Generated image: dog shape with eyes -->
+                    <svg width="100%" viewBox="0 0 240 140">
+                        <rect x="5" y="5" width="230" height="130" rx="10" fill="#1e293b" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <!-- Dog body forming -->
+                        <ellipse cx="115" cy="75" rx="50" ry="30" fill="#b45309" fill-opacity=".4" stroke="#d97706" stroke-width="1"/>
+                        <!-- Head -->
+                        <circle cx="155" cy="48" r="20" fill="#b45309" fill-opacity=".45" stroke="#d97706" stroke-width="1"/>
+                        <!-- Ears -->
+                        <ellipse cx="143" cy="32" rx="6" ry="10" fill="#92400e" fill-opacity=".35" transform="rotate(-15,143,32)"/>
+                        <ellipse cx="167" cy="32" rx="6" ry="10" fill="#92400e" fill-opacity=".35" transform="rotate(15,167,32)"/>
+                        <!-- Eyes! (highlighted) -->
+                        <circle cx="148" cy="45" r="3.5" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+                        <circle cx="162" cy="45" r="3.5" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+                        <circle cx="149" cy="44" r="1" fill="white"/><circle cx="163" cy="44" r="1" fill="white"/>
+                        <!-- Nose -->
+                        <ellipse cx="155" cy="55" rx="3" ry="2.5" fill="#1e293b"/>
+                        <!-- Legs sketched -->
+                        <rect x="80" y="98" width="10" height="22" rx="4" fill="#b45309" fill-opacity=".3"/>
+                        <rect x="98" y="100" width="10" height="20" rx="4" fill="#b45309" fill-opacity=".3"/>
+                        <rect x="130" y="98" width="10" height="22" rx="4" fill="#b45309" fill-opacity=".3"/>
+                        <rect x="148" y="100" width="10" height="20" rx="4" fill="#b45309" fill-opacity=".3"/>
+                        <text x="120" y="128" text-anchor="middle" fill="#a855f7" font-size="9" font-style="italic">dog with eyes appearing...</text>
+                    </svg>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-emerald-500/30">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">3</div>
+                        <h3 class="text-xs font-bold text-emerald-400">Text: "... on a red couch" (complete)</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mb-3 justify-center">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">A</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">golden</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">dog</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">with</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">brown eyes</span>
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs border border-emerald-500/40">on a red couch</span>
+                    </div>
+                    <div class="text-center text-pink-400 text-xs mb-2"><i class="fa-solid fa-arrow-down"></i> feed to T2I</div>
+                    <!-- Generated image: full scene -->
+                    <svg width="100%" viewBox="0 0 240 140">
+                        <rect x="5" y="5" width="230" height="130" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+                        <!-- Background -->
+                        <rect x="5" y="5" width="230" height="40" rx="10" fill="#1e3a5f" fill-opacity=".3"/>
+                        <!-- Couch! (now visible) -->
+                        <rect x="25" y="78" width="190" height="20" rx="6" fill="#991b1b" fill-opacity=".5" stroke="#dc2626" stroke-width="1"/>
+                        <rect x="20" y="72" width="200" height="10" rx="4" fill="#b91c1c" fill-opacity=".4"/>
+                        <!-- Floor -->
+                        <rect x="5" y="100" width="230" height="35" rx="0" fill="#78350f" fill-opacity=".15"/>
+                        <!-- Dog body -->
+                        <ellipse cx="120" cy="68" rx="45" ry="25" fill="#b45309" fill-opacity=".55" stroke="#d97706" stroke-width="1.5"/>
+                        <!-- Head -->
+                        <circle cx="158" cy="42" r="18" fill="#b45309" fill-opacity=".6" stroke="#d97706" stroke-width="1.5"/>
+                        <!-- Ears -->
+                        <ellipse cx="147" cy="28" rx="6" ry="9" fill="#92400e" fill-opacity=".45" transform="rotate(-15,147,28)"/>
+                        <ellipse cx="169" cy="28" rx="6" ry="9" fill="#92400e" fill-opacity=".45" transform="rotate(15,169,28)"/>
+                        <!-- Eyes -->
+                        <circle cx="152" cy="40" r="3" fill="#451a03" stroke="#92400e" stroke-width=".5"/>
+                        <circle cx="164" cy="40" r="3" fill="#451a03" stroke="#92400e" stroke-width=".5"/>
+                        <circle cx="153" cy="39" r="1" fill="white"/><circle cx="165" cy="39" r="1" fill="white"/>
+                        <!-- Nose -->
+                        <ellipse cx="158" cy="49" rx="3.5" ry="2.5" fill="#1e293b"/>
+                        <!-- Mouth -->
+                        <path d="M155,52 Q158,55 161,52" fill="none" stroke="#1e293b" stroke-width=".8"/>
+                        <!-- Legs -->
+                        <rect x="85" y="87" width="11" height="22" rx="5" fill="#b45309" fill-opacity=".5" stroke="#d97706" stroke-width=".5"/>
+                        <rect x="102" y="89" width="11" height="20" rx="5" fill="#b45309" fill-opacity=".5" stroke="#d97706" stroke-width=".5"/>
+                        <rect x="132" y="87" width="11" height="22" rx="5" fill="#b45309" fill-opacity=".5" stroke="#d97706" stroke-width=".5"/>
+                        <rect x="149" y="89" width="11" height="20" rx="5" fill="#b45309" fill-opacity=".5" stroke="#d97706" stroke-width=".5"/>
+                        <!-- Tail -->
+                        <path d="M75,60 Q58,40 62,25" fill="none" stroke="#d97706" stroke-width="3.5" stroke-linecap="round"/>
+                        <text x="120" y="128" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="bold">complete scene generated</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="mt-3 insight-box animate-fade-up">
+            <p class="text-sm text-slate-200 text-center"><i class="fa-solid fa-infinity text-emerald-400 mr-2"></i>
+            <span class="text-emerald-400 font-bold">Dual diffusion:</span> Text diffusion progressively denoises words → each partial text conditions a T2I model to generate image content. Phase tokenizer selects relevant regions from the <span class="text-white font-semibold">original image</span>, and the loss is computed between the <span class="text-white font-semibold">generated regions and the corresponding selected regions</span> of the original — supervising the T2I model to reconstruct what the Phase tokenizer focuses on.</p>
+        </div>
+    </div>
+</section>
+
+
+<script>
+    let currentSlide=0;const slides=document.querySelectorAll('.slide'),totalSlides=slides.length;
+    document.getElementById('total-pages').textContent=totalSlides;
+    const navDotsContainer=document.getElementById('nav-dots');
+    for(let i=0;i<totalSlides;i++){const d=document.createElement('button');d.className='nav-dot'+(i===0?' active':'');d.onclick=function(e){e.stopPropagation();goToSlide(i)};navDotsContainer.appendChild(d)}
+    function updateSlide(){slides.forEach((s,i)=>s.classList.toggle('active',i===currentSlide));document.getElementById('current-page').textContent=currentSlide+1;document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===currentSlide))}
+    function goToSlide(i){currentSlide=Math.max(0,Math.min(i,totalSlides-1));updateSlide()}
+    function nextSlide(){if(currentSlide<totalSlides-1){currentSlide++;updateSlide()}}
+    function prevSlide(){if(currentSlide>0){currentSlide--;updateSlide()}}
+    document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();nextSlide()}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prevSlide()}else if(e.key==='Home'){e.preventDefault();goToSlide(0)}else if(e.key==='End'){e.preventDefault();goToSlide(totalSlides-1)}else if(e.key==='Escape'){closeLightbox()}});
+    function openLightbox(src){document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('active');document.body.style.overflow='hidden'}
+    function closeLightbox(){document.getElementById('lightbox').classList.remove('active');document.body.style.overflow=''}
+    updateSlide();
+</script>
+</body>
+</html>
